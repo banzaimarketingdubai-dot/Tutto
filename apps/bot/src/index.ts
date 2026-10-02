@@ -38,10 +38,16 @@ bot.command('start', async (ctx: Context) => {
   }
 
   // Interactive Onboarding JTBD
-  let welcomeText = `👋 *Добро пожаловать в TuttoMinutto, ${userName}!*\n`
-  welcomeText += `_«Здесь выбираешь ты!»_\n\n`
-  welcomeText += `Платформа, где бизнес сам бьется за ваш заказ, а исполнители получают горячие лиды.\n\n`
-  welcomeText += `*Какая цель вашего визита сегодня?*`
+  let welcomeText = `⚡️ <b>Tutto Minuto — где ищешь не ты, а тебя!</b>\n\n`
+  welcomeText += `Забудь про поиск по 20+ спам-чатам Пхукета и переплату 25% на Airbnb / Booking.\n\n`
+  welcomeText += `🛵 <b>Аренда транспорта:</b> Байки, авто, премиум-кары.\n`
+  welcomeText += `🏠 <b>Аренда жилья:</b> Кондо, апартаменты, виллы со срочными дисконтами от хозяев.\n\n`
+  welcomeText += `📍 <b>Как это работает:</b>\n\n`
+  welcomeText += `1️⃣ Зажми кнопку и надиктуй запрос за 5 секунд.\n\n`
+  welcomeText += `2️⃣ Проверенные собственники и прокаты района пришлют предложения с ценами и фото за 60 секунд.\n\n`
+  welcomeText += `3️⃣ Выбирай лучший вариант и связывайся напрямую!\n\n`
+  welcomeText += `🤝 <b>Для бизнеса:</b> Получайте горячие заказы прямо в Telegram без затрат на рекламу.\n\n`
+  welcomeText += `👇 <b>Какая цель вашего визита сегодня?</b>`
 
   const keyboard = new InlineKeyboard()
     .text('🛍️ Ищу услуги/товары', 'onboard:customer')
@@ -52,7 +58,7 @@ bot.command('start', async (ctx: Context) => {
     'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800',
     {
       caption: welcomeText,
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: keyboard,
     }
   )
