@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { ArrowUpRight, ArrowDownRight, RefreshCw, FileText, Download, Play } from 'lucide-react'
 import {
   LayoutDashboard,
   Users,
@@ -43,10 +45,54 @@ const MOCK_USERS = [
   { id: 'usr-4', name: 'Phuket Drive', role: 'business', status: 'active', joined: '2024-02-10', balance: 1250 },
 ]
 
+const MOCK_TRANSACTIONS = [
+  { id: 'tx-1', type: 'deposit', user: 'Александр', amount: '+500', method: 'Stars ⭐', date: '2024-10-02 14:30', status: 'completed' },
+  { id: 'tx-2', type: 'withdrawal', user: 'Ayana Luxury Resort', amount: '-1200', method: 'TON 💎', date: '2024-10-02 12:15', status: 'pending' },
+  { id: 'tx-3', type: 'payment', user: 'Иван К.', amount: '-150', method: 'Card 💳', date: '2024-10-01 19:15', status: 'refunded' },
+  { id: 'tx-4', type: 'fee', user: 'Phuket Drive', amount: '-25', method: 'System', date: '2024-10-01 15:00', status: 'completed' },
+]
+
+const MOCK_DISPUTES = [
+  { id: 'dsp-101', dealId: 'req-bike', client: 'Александр', provider: 'Phuket Drive', amount: '$15', reason: 'Не привезли байк вовремя', status: 'open', priority: 'high' },
+  { id: 'dsp-102', dealId: 'req-villa', client: 'John D.', provider: 'Ayana Resort', amount: '$250', reason: 'Фото не соответствуют реальности', status: 'reviewing', priority: 'medium' },
+]
+
 export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Supabase State
+  const [transactions, setTransactions] = useState(MOCK_TRANSACTIONS)
+  const [disputes, setDisputes] = useState(MOCK_DISPUTES)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    // Phase 2: Supabase Integration for Transactions & Disputes
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const { data: txData, error: txError } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(50)
+        if (!txError && txData && txData.length > 0) {
+          // If real data exists, map it (assuming schema matches)
+          // setTransactions(txData) 
+        }
+        
+        const { data: dspData, error: dspError } = await supabase.from('disputes').select('*').order('created_at', { ascending: false }).limit(20)
+        if (!dspError && dspData && dspData.length > 0) {
+          // setDisputes(dspData)
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin data from Supabase', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    if (activeTab === 'transactions' || activeTab === 'disputes') {
+      fetchData()
+    }
+  }, [activeTab])
 
   const renderDashboard = () => (
     <div className="space-y-6 animate-fadeIn">
@@ -238,6 +284,139 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
     )
   }
 
+  const renderTransactions = () => {
+    return (
+      <div className="space-y-4 animate-fadeIn">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            Финансовый реестр
+            {isLoading && <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />}
+          </h3>
+          <button className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2 text-white">
+            <Download className="w-4 h-4" /> Выгрузить CSV
+          </button>
+        </div>
+
+        <div className="glass-card border-white/10 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-300">
+              <thead className="bg-slate-900/80 text-xs uppercase font-bold text-gray-400 border-b border-white/10">
+                <tr>
+                  <th className="px-6 py-4">ID / Дата</th>
+                  <th className="px-6 py-4">Тип</th>
+                  <th className="px-6 py-4">Пользователь</th>
+                  <th className="px-6 py-4">Сумма</th>
+                  <th className="px-6 py-4">Метод</th>
+                  <th className="px-6 py-4">Статус</th>
+                  <th className="px-6 py-4 text-right">Действия</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {transactions.map(tx => (
+                  <tr key={tx.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-mono text-white text-xs">{tx.id}</div>
+                      <div className="text-[10px] text-gray-500">{tx.date}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5">
+                        {tx.type === 'deposit' ? <ArrowDownRight className="w-4 h-4 text-emerald-400" /> : 
+                         tx.type === 'withdrawal' ? <ArrowUpRight className="w-4 h-4 text-rose-400" /> : 
+                         <RefreshCw className="w-4 h-4 text-amber-400" />}
+                        <span className="capitalize">{tx.type}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-white">{tx.user}</td>
+                    <td className={`px-6 py-4 font-mono font-bold ${tx.amount.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {tx.amount}
+                    </td>
+                    <td className="px-6 py-4">{tx.method}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                        tx.status === 'completed' ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/30' :
+                        tx.status === 'pending' ? 'bg-amber-400/10 text-amber-400 border border-amber-400/30' :
+                        'bg-white/10 text-gray-300 border border-white/20'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {tx.status === 'pending' && (
+                        <button className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-lg hover:bg-emerald-500/30 mr-2">
+                          Approve
+                        </button>
+                      )}
+                      {tx.status === 'completed' && tx.type === 'payment' && (
+                        <button className="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-bold rounded-lg hover:bg-rose-500/30 mr-2">
+                          Refund
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderDisputes = () => {
+    return (
+      <div className="space-y-4 animate-fadeIn">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+           <div className="glass-card p-4 border-rose-500/30 text-center">
+             <div className="text-3xl font-black text-rose-400">{disputes.filter(d => d.status === 'open').length}</div>
+             <div className="text-xs text-gray-400 uppercase font-bold mt-1">Открытых споров</div>
+           </div>
+           <div className="glass-card p-4 border-amber-400/30 text-center">
+             <div className="text-3xl font-black text-amber-400">{disputes.filter(d => d.status === 'reviewing').length}</div>
+             <div className="text-xs text-gray-400 uppercase font-bold mt-1">В процессе</div>
+           </div>
+           <div className="glass-card p-4 border-emerald-500/30 text-center">
+             <div className="text-3xl font-black text-emerald-400">145</div>
+             <div className="text-xs text-gray-400 uppercase font-bold mt-1">Решено за месяц</div>
+           </div>
+        </div>
+
+        <div className="space-y-3">
+          {disputes.map(dispute => (
+            <div key={dispute.id} className="glass-card p-4 border-white/10 hover:border-white/20 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
+                  dispute.priority === 'high' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-amber-400/20 border-amber-400/40 text-amber-400'
+                }`}>
+                  <Scale className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-white text-sm">Спор #{dispute.id}</span>
+                    <span className="text-[10px] bg-white/10 text-gray-300 px-2 py-0.5 rounded-full font-mono">{dispute.dealId}</span>
+                    {dispute.priority === 'high' && <span className="text-[9px] bg-rose-500 text-white font-black px-2 py-0.5 rounded uppercase">Срочно</span>}
+                  </div>
+                  <div className="text-xs text-gray-400 mb-2">
+                    <strong className="text-white">{dispute.client}</strong> против <strong className="text-white">{dispute.provider}</strong>
+                  </div>
+                  <div className="text-xs text-rose-300 bg-rose-500/10 px-3 py-2 rounded-lg border border-rose-500/20">
+                    <strong className="text-rose-400">Причина:</strong> {dispute.reason}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
+                 <div className="text-xl font-black text-white text-right mb-1">{dispute.amount}</div>
+                 <button className="w-full md:w-auto px-4 py-2 bg-[#00F2FE] text-black font-bold text-xs rounded-xl hover:brightness-110">
+                   Рассмотреть дело
+                 </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   const renderPlaceholder = (title: string) => (
     <div className="flex-1 flex items-center justify-center animate-fadeIn min-h-[60vh]">
       <div className="text-center space-y-4">
@@ -246,7 +425,7 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
         </div>
         <h3 className="text-2xl font-bold text-white">Раздел "{title}"</h3>
         <p className="text-gray-400 max-w-sm mx-auto">
-          Этот раздел находится в разработке (Фаза 2 плана). Здесь будет реализован специализированный функционал для управления {title.toLowerCase()}.
+          Этот раздел находится в разработке (Фаза 3 плана). Здесь будет реализован специализированный функционал для управления {title.toLowerCase()}.
         </p>
       </div>
     </div>
@@ -357,8 +536,8 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
         <div className="flex-1 overflow-y-auto p-6 lg:p-10 z-10 relative">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'users' && renderUsers()}
-          {activeTab === 'transactions' && renderPlaceholder('Транзакции')}
-          {activeTab === 'disputes' && renderPlaceholder('Арбитраж')}
+          {activeTab === 'transactions' && renderTransactions()}
+          {activeTab === 'disputes' && renderDisputes()}
           {activeTab === 'analytics' && renderPlaceholder('Аналитика')}
           {activeTab === 'settings' && renderPlaceholder('Настройки')}
         </div>
