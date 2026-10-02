@@ -27,7 +27,7 @@ export async function analyzeRequestFlowWithAI(
   currentDistrict: string,
   maxRetries = 3
 ): Promise<SmartAIResponse> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' })
+  const fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-1.5-flash']
 
   const conversationText = conversation.map(c => `${c.role === 'user' ? 'Пользователь' : 'ИИ'}: ${c.text}`).join('\n')
 
@@ -75,35 +75,44 @@ ${conversationText}
 `
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      if (!apiKey) {
-        throw new Error('VITE_GEMINI_API_KEY_MISSING: ключ Gemini не передан в .env (VITE_GEMINI_API_KEY)')
-      }
-      const result = await model.generateContent(prompt)
-      const text = result.response.text()
-      const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim()
-      const parsed = JSON.parse(jsonStr)
+    for (const modelName of fallbackModels) {
+      try {
+        if (!apiKey) {
+          throw new Error('VITE_GEMINI_API_KEY_MISSING: ключ Gemini не передан в .env (VITE_GEMINI_API_KEY)')
+        }
+        const model = genAI.getGenerativeModel({ model: modelName })
+        const result = await model.generateContent(prompt)
+        const text = result.response.text()
+        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim()
+        const parsed = JSON.parse(jsonStr)
 
-      return parsed as SmartAIResponse
-    } catch (error: any) {
-      console.warn(`Gemini API Warning (Attempt ${attempt}):`, error)
-      
-      // Automatically send error alert to Telegram Superadmin (ID: 260669598)
-      if (attempt === 1) {
-        sendSuperadminErrorAlert(
-          error?.message || 'Gemini API Error',
-          error?.stack,
-          `AI Analysis (Attempt ${attempt})`
-        )
-      }
+        return parsed as SmartAIResponse
+      } catch (error: any) {
+        console.warn(`Gemini API Warning (${modelName}, Attempt ${attempt}):`, error)
+        
+        // Throw immediately if key is missing
+        if (error?.message?.includes('VITE_GEMINI_API_KEY_MISSING')) {
+          throw error
+        }
 
-      const isRateLimit = error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('Quota')
-      if (attempt < maxRetries && (isRateLimit || error?.message?.includes('503') || error?.message?.includes('fetch failed'))) {
-        await delay(1000)
+        const isModelDeprecated = error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('no longer available')
+        if (isModelDeprecated) {
+          // Instantly try the next fallback model without delay
+          continue
+        }
+
+        const isRateLimit = error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('Quota')
+        if (attempt < maxRetries && (isRateLimit || error?.message?.includes('503') || error?.message?.includes('fetch failed'))) {
+          await delay(1000)
+          break // Break to the outer attempt loop to retry after delay
+        }
+
+        // For other unknown errors, try the next model
         continue
       }
+    }
 
-      // Intelligent deterministic fallback parser
+    // Intelligent deterministic fallback parser (if all retries and models fail)
       const userMsgs = conversation.filter(c => c.role === 'user').map(c => c.text).join(' ')
       const userText = userMsgs.trim() || 'Запрос на услугу'
       const lowerText = userText.toLowerCase()
