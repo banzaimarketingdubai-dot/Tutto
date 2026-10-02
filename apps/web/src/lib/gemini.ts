@@ -27,7 +27,7 @@ export async function analyzeRequestFlowWithAI(
   currentDistrict: string,
   maxRetries = 3
 ): Promise<SmartAIResponse> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' })
 
   const conversationText = conversation.map(c => `${c.role === 'user' ? 'Пользователь' : 'ИИ'}: ${c.text}`).join('\n')
 
