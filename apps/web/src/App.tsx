@@ -274,7 +274,7 @@ export function App() {
 
   const handleModeChange = (newMode: AppMode) => {
     setMode(newMode)
-    setActiveTab((newMode === 'rent' || newMode === 'services') ? 'home' : 'market')
+    setActiveTab('home')
     setActiveCategory(null)
   }
 

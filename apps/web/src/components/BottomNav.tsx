@@ -36,27 +36,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     onSelectTab(tab)
   }
 
-  const servicesItems: { id: TabId; labelKey: string; icon: React.ElementType }[] = [
+  const navItems: { id: TabId; labelKey: string; icon: React.ElementType }[] = [
     { id: 'home', labelKey: 'tab_home', icon: Home },
     { id: 'my-bids', labelKey: 'tab_my_bids', icon: Star },
     { id: 'chat', labelKey: 'tab_chat', icon: MessageSquare },
     { id: 'account', labelKey: 'tab_account', icon: User },
   ]
 
-  const marketItems: { id: TabId; labelKey: string; icon: React.ElementType }[] = [
-    { id: 'market', labelKey: 'tab_market', icon: Flame },
-    { id: 'explore', labelKey: 'tab_explore', icon: Search },
-    { id: 'mine', labelKey: 'tab_mine', icon: Package },
-    { id: 'account', labelKey: 'tab_account', icon: User },
-  ]
-
-  const currentItems = mode === 'market' ? marketItems : servicesItems
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/[0.08] backdrop-blur-2xl px-4 pt-3 pb-6 sm:pb-3 z-50 transition-colors duration-300">
       <div className="max-w-[390px] mx-auto flex justify-between items-center relative">
-        {currentItems.map((item, index) => {
-          const isActive = activeTab === item.id
+        {navItems.map((item, index) => {
+          const isActive = activeTab === item.id || (item.id === 'home' && activeTab === 'market')
           const Icon = item.icon
           
           return (
