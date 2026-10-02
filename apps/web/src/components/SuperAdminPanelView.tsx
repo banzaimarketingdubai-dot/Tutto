@@ -26,7 +26,7 @@ interface SuperAdminPanelViewProps {
   onClose: () => void
 }
 
-type AdminTab = 'dashboard' | 'transactions' | 'disputes' | 'analytics' | 'users' | 'settings'
+type AdminTab = 'dashboard' | 'transactions' | 'payouts' | 'disputes' | 'verification' | 'users' | 'reviews' | 'ai-log' | 'broadcasts' | 'analytics' | 'settings'
 
 // Mock Data
 const MOCK_METRICS = {
@@ -58,9 +58,52 @@ const MOCK_DISPUTES = [
 ]
 
 export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClose }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [pin, setPin] = useState('')
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  if (!isAuthenticated) {
+    const handlePinSubmit = (e: React.FormEvent) => {
+      e.preventDefault()
+      if (pin === '7777') { // Hardcoded for demo/MVP purposes
+        setIsAuthenticated(true)
+        triggerHapticFeedback('success')
+      } else {
+        triggerHapticFeedback('error')
+        setPin('')
+        alert('Неверный PIN-код')
+      }
+    }
+    
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#050811] flex items-center justify-center animate-fadeIn px-4">
+        <div className="glass-card p-8 max-w-sm w-full border-rose-500/30 text-center">
+          <div className="w-16 h-16 mx-auto bg-rose-500/20 rounded-full flex items-center justify-center mb-6">
+            <ShieldBan className="w-8 h-8 text-rose-500" />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2">Restricted Area</h2>
+          <p className="text-sm text-gray-400 mb-6">Введите PIN-код суперадминистратора для доступа (7777)</p>
+          <form onSubmit={handlePinSubmit}>
+            <input 
+              type="password" 
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-white focus:border-rose-500 outline-none mb-4"
+              placeholder="••••"
+              maxLength={4}
+              autoFocus
+            />
+            <div className="flex gap-3">
+               <button type="button" onClick={onClose} className="flex-1 py-3 bg-white/5 text-gray-400 rounded-xl font-bold hover:bg-white/10">Отмена</button>
+               <button type="submit" className="flex-1 py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600">Войти</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
   // Supabase State
   const [transactions, setTransactions] = useState(MOCK_TRANSACTIONS)
@@ -171,8 +214,30 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-card p-5 border-white/10 h-80 flex items-center justify-center text-gray-500 font-medium">
-          [Здесь будет график GMV (Recharts)]
+        <div className="lg:col-span-2 glass-card p-5 border-white/10 h-80 flex flex-col">
+          <h4 className="font-bold text-white mb-4">Аналитика Монетизации</h4>
+          <div className="flex-1 grid grid-cols-2 gap-4">
+             <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-xs mb-1">Токены (Сделки + Маркет)</div>
+                <div className="text-2xl font-black text-emerald-400">$2,340</div>
+                <div className="text-[10px] text-gray-500 mt-2">Оплата офферов после принятия и промо в маркете</div>
+             </div>
+             <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-xs mb-1">VIP Статусы</div>
+                <div className="text-2xl font-black text-[#00F2FE]">$1,140</div>
+                <div className="text-[10px] text-gray-500 mt-2">Ранний доступ (+10 мин) и синяя галочка</div>
+             </div>
+             <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-xs mb-1">Аренда AI Агента</div>
+                <div className="text-2xl font-black text-purple-400">$850</div>
+                <div className="text-[10px] text-gray-500 mt-2">Автоматический поиск и отклик на заявки</div>
+             </div>
+             <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-xs mb-1">Реферальная программа</div>
+                <div className="text-2xl font-black text-amber-400">-$320</div>
+                <div className="text-[10px] text-gray-500 mt-2">Ожидает выплат: $180</div>
+             </div>
+          </div>
         </div>
         <div className="glass-card p-5 border-white/10 h-80 flex flex-col">
           <h4 className="font-bold text-white mb-4">Топ ниши за неделю</h4>
@@ -433,10 +498,15 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
 
   const navItems: { id: AdminTab, label: string, icon: React.ReactNode, color: string }[] = [
     { id: 'dashboard', label: 'Дашборд', icon: <LayoutDashboard className="w-5 h-5" />, color: 'text-[#00F2FE]' },
-    { id: 'transactions', label: 'Транзакции', icon: <CreditCard className="w-5 h-5" />, color: 'text-emerald-400' },
-    { id: 'disputes', label: 'Арбитраж', icon: <Scale className="w-5 h-5" />, color: 'text-rose-400' },
-    { id: 'analytics', label: 'Аналитика', icon: <BarChart3 className="w-5 h-5" />, color: 'text-amber-400' },
     { id: 'users', label: 'Пользователи', icon: <Users className="w-5 h-5" />, color: 'text-purple-400' },
+    { id: 'verification', label: 'Верификация (VIP)', icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-[#00F2FE]' },
+    { id: 'reviews', label: 'Отзывы', icon: <FileText className="w-5 h-5" />, color: 'text-gray-400' },
+    { id: 'transactions', label: 'Транзакции', icon: <CreditCard className="w-5 h-5" />, color: 'text-emerald-400' },
+    { id: 'payouts', label: 'Выплаты', icon: <DollarSign className="w-5 h-5" />, color: 'text-emerald-400' },
+    { id: 'disputes', label: 'Арбитраж', icon: <Scale className="w-5 h-5" />, color: 'text-rose-400' },
+    { id: 'broadcasts', label: 'Рассылки', icon: <Play className="w-5 h-5" />, color: 'text-amber-400' },
+    { id: 'ai-log', label: 'AI Лог', icon: <Activity className="w-5 h-5" />, color: 'text-purple-400' },
+    { id: 'analytics', label: 'Аналитика', icon: <BarChart3 className="w-5 h-5" />, color: 'text-amber-400' },
     { id: 'settings', label: 'Настройки', icon: <Settings className="w-5 h-5" />, color: 'text-gray-400' },
   ]
 
@@ -538,6 +608,14 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'transactions' && renderTransactions()}
           {activeTab === 'disputes' && renderDisputes()}
+          
+          {/* Missing Module Placeholders */}
+          {activeTab === 'verification' && renderPlaceholder('Верификация Провайдеров (VIP)')}
+          {activeTab === 'payouts' && renderPlaceholder('Выплаты Партнерам')}
+          {activeTab === 'reviews' && renderPlaceholder('Модерация Отзывов')}
+          {activeTab === 'ai-log' && renderPlaceholder('Логи AI Агента')}
+          {activeTab === 'broadcasts' && renderPlaceholder('Рассылки')}
+          
           {activeTab === 'analytics' && renderPlaceholder('Аналитика')}
           {activeTab === 'settings' && renderPlaceholder('Настройки')}
         </div>
