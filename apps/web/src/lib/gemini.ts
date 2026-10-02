@@ -27,7 +27,7 @@ export async function analyzeRequestFlowWithAI(
   currentDistrict: string,
   maxRetries = 3
 ): Promise<SmartAIResponse> {
-  const fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-1.5-flash']
+  const fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite']
 
   const conversationText = conversation.map(c => `${c.role === 'user' ? 'Пользователь' : 'ИИ'}: ${c.text}`).join('\n')
 
