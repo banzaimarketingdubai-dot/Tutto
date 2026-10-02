@@ -19,32 +19,34 @@ interface CustomCategoryWizardState {
 
 const adminWizards: Record<number, CustomCategoryWizardState> = {}
 
+// ==========================================
+// 1. ONBOARDING & JTBD FLOWS
+// ==========================================
+
 bot.command('start', async (ctx: Context) => {
   const startParam = ctx.match
   const userName = ctx.from?.first_name || 'Пользователь'
 
-  let welcomeText = `👋 *Добро пожаловать в TuttoMinutto, ${userName}!*\n`
-  welcomeText += `_«Здесь выбираешь ты!»_\n\n`
-  welcomeText += `*TuttoMinutto* — это локальный обратный аукцион услуг в курортных хабах (Пхукет, Бали, Бангкок, Вьетнам, Сеул, Токио).\n\n`
-  welcomeText += `💡 *Как это работает:*\n`
-  welcomeText += `1. Вы создаете запрос и указываете желаемые условия (или «Жду предложений»).\n`
-  welcomeText += `2. Проверенные исполнители и *AI Sales Agent* делают встречные офферы за 1 минуту.\n`
-  welcomeText += `3. Вы выбираете лучший отклик и связываетесь напрямую в чате Telegram.\n\n`
-
+  // Handling direct deep links via ref_ or specific start strings
   if (startParam && typeof startParam === 'string') {
     if (startParam.startsWith('ref_')) {
       const partnerId = startParam.split('_')[1]
-      welcomeText += `🎉 *Вы приглашены партнёром (ID: ${partnerId})!*\n`
-      welcomeText += `Вам начислен приветственный бонус. Ваш партнер также будет получать комиссионные с ваших заказов.\n\n`
+      await ctx.reply(`🎉 *Вы приглашены партнёром (ID: ${partnerId})!*\nВам начислен приветственный бонус.`, { parse_mode: 'Markdown' })
     } else {
-      welcomeText += `🎁 *Вы пришли по ссылке заказа:* \`${startParam}\`\n\n`
+      await ctx.reply(`🎁 *Вы пришли по спец. ссылке:* \`${startParam}\``, { parse_mode: 'Markdown' })
     }
   }
 
+  // Interactive Onboarding JTBD
+  let welcomeText = `👋 *Добро пожаловать в TuttoMinutto, ${userName}!*\n`
+  welcomeText += `_«Здесь выбираешь ты!»_\n\n`
+  welcomeText += `Платформа, где бизнес сам бьется за ваш заказ, а исполнители получают горячие лиды.\n\n`
+  welcomeText += `*Какая цель вашего визита сегодня?*`
+
   const keyboard = new InlineKeyboard()
-    .webApp('🚀 Открыть TuttoMinutto App', appUrl)
+    .text('🛍️ Ищу услуги/товары', 'onboard:customer')
     .row()
-    .url('💬 Поддержка & Вопросы', 'https://t.me/tuttominutto_bot')
+    .text('💼 Хочу зарабатывать (Бизнес)', 'onboard:business')
 
   await ctx.replyWithPhoto(
     'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800',
@@ -56,7 +58,105 @@ bot.command('start', async (ctx: Context) => {
   )
 })
 
-// Command /help
+// Customer Onboarding Path
+bot.callbackQuery('onboard:customer', async (ctx: Context) => {
+  await ctx.answerCallbackQuery()
+  
+  const text = 
+    `🛍️ <b>Отлично! Вы — Заказчик.</b>\n\n` +
+    `В TuttoMinutto вам не нужно искать и скроллить чаты. Просто опишите, что вам нужно, и ИИ моментально подберет исполнителей!\n\n` +
+    `💡 <i>Как это работает: Создали заявку ➡️ Получили встречные предложения с ценами ➡️ Выбрали лучший отклик.</i>\n\n` +
+    `Давайте создадим вашу первую заявку прямо сейчас! 👇`
+
+  const deepLink = `${appUrl}?startapp=create_request`
+  const keyboard = new InlineKeyboard()
+    .webApp('✨ Создать первую заявку', deepLink)
+
+  await ctx.editMessageCaption({
+    caption: text,
+    parse_mode: 'HTML',
+    reply_markup: keyboard
+  }).catch(() => {})
+})
+
+// Business Onboarding Path - Step 1
+bot.callbackQuery('onboard:business', async (ctx: Context) => {
+  await ctx.answerCallbackQuery()
+  
+  const text = 
+    `💼 <b>Зарабатывайте с TuttoMinutto!</b>\n\n` +
+    `Чтобы получать только <b>ГОРЯЧИЕ лиды</b>, давайте настроим уведомления.\n\n` +
+    `📍 <b>Шаг 1: Выберите вашу основную локацию (Хаб):</b>`
+
+  const keyboard = new InlineKeyboard()
+    .text('🏝️ Пхукет', 'onboard:hub:phuket')
+    .text('🌴 Бали', 'onboard:hub:bali')
+    .row()
+    .text('🏙️ Дубай', 'onboard:hub:dubai')
+    .text('🌸 Самуи', 'onboard:hub:samui')
+
+  await ctx.editMessageCaption({
+    caption: text,
+    parse_mode: 'HTML',
+    reply_markup: keyboard
+  }).catch(() => {})
+})
+
+// Business Onboarding Path - Step 2 (Niches)
+bot.callbackQuery(/^onboard:hub:(.+)$/, async (ctx: Context) => {
+  await ctx.answerCallbackQuery()
+  
+  const text = 
+    `🎯 <b>Отлично! Локация сохранена.</b>\n\n` +
+    `🛠 <b>Шаг 2: Выберите ваши ниши</b>\n` +
+    `Отметьте категории, по которым вы хотите получать пуш-уведомления о новых заказах (пока можно пропустить или выбрать "Готово").`
+
+  const keyboard = new InlineKeyboard()
+    .text('🛵 Аренда байков', 'onboard:niche:toggle')
+    .text('🧹 Клининг', 'onboard:niche:toggle')
+    .row()
+    .text('💆 Массаж', 'onboard:niche:toggle')
+    .text('📸 Фотограф', 'onboard:niche:toggle')
+    .row()
+    .text('✅ ГОТОВО', 'onboard:done')
+
+  await ctx.editMessageCaption({
+    caption: text,
+    parse_mode: 'HTML',
+    reply_markup: keyboard
+  }).catch(() => {})
+})
+
+// Mock toggle for niches (just answers query for UX)
+bot.callbackQuery('onboard:niche:toggle', async (ctx: Context) => {
+  await ctx.answerCallbackQuery({ text: 'Ниша выбрана! Нажмите ГОТОВО, чтобы продолжить.', show_alert: true })
+})
+
+// Business Onboarding Path - Done
+bot.callbackQuery('onboard:done', async (ctx: Context) => {
+  await ctx.answerCallbackQuery()
+  
+  const text = 
+    `🎉 <b>Все готово! Вы в игре.</b>\n\n` +
+    `Ваш профиль настроен. Теперь вы будете получать уведомления о новых заявках клиентов.\n\n` +
+    `👉 <b>Сделайте последний шаг:</b> Заполните карточку вашего бизнеса (Витрину) в приложении, чтобы выделяться среди конкурентов и получать заказы даже когда вы спите!`
+
+  const deepLink = `${appUrl}?startapp=setup_business`
+  const keyboard = new InlineKeyboard()
+    .webApp('🚀 Заполнить профиль бизнеса', deepLink)
+
+  await ctx.editMessageCaption({
+    caption: text,
+    parse_mode: 'HTML',
+    reply_markup: keyboard
+  }).catch(() => {})
+})
+
+
+// ==========================================
+// 2. STANDARD COMMANDS & UTILS
+// ==========================================
+
 bot.command('help', async (ctx: Context) => {
   await ctx.replyWithPhoto(
     'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800',
@@ -64,7 +164,7 @@ bot.command('help', async (ctx: Context) => {
       caption: `ℹ️ *Справка TuttoMinutto*\n\n` +
       `_Здесь выбираешь ты!_\n\n` +
       `• /start — Перезапустить бота и открыть Mini App\n` +
-      `• /keys или /status — Проверить доступность ключей ИИ и статус мониторинга ошибок (Superadmin)\n` +
+      `• /keys или /status — Проверить доступность ключей ИИ\n` +
       `• Нажмите кнопку «Открыть TuttoMinutto App» для просмотра аукционов\n\n` +
       `Юзернейм бота: @tuttominutto_bot`,
       parse_mode: 'Markdown'
@@ -72,16 +172,15 @@ bot.command('help', async (ctx: Context) => {
   )
 })
 
-// Command /keys and /status for Superadmin API Key & Error Monitoring
 bot.command(['keys', 'status'], async (ctx: Context) => {
   const geminiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
-  const geminiStatus = geminiKey ? '🟢 АКТИВЕН (Gemini 2.0 Flash API)' : '🟡 НЕ ЗАДАЛ VITE_GEMINI_API_KEY (Работает Умный ИИ-фоллбэк)'
+  const geminiStatus = geminiKey ? '🟢 АКТИВЕН (Gemini 2.0 Flash API)' : '🟡 НЕ ЗАДАЛ VITE_GEMINI_API_KEY'
 
   const text = 
     `📊 <b>ОТЧЕТ ДОСТУПНОСТИ КЛЮЧЕЙ И МОНИТОРИНГА ИИ</b>\n\n` +
     `🤖 <b>Gemini 2.0 Flash API:</b> ${geminiStatus}\n` +
     `🤖 <b>Telegram Bot API:</b> 🟢 АКТИВЕН (@tuttominutto_bot)\n` +
-    `👤 <b>Superadmin Chat ID:</b> <code>260669598</code> (Пересылка всех ошибок включена)\n\n` +
+    `👤 <b>Superadmin Chat ID:</b> <code>260669598</code>\n\n` +
     `🌐 <b>Vercel Production Endpoints:</b>\n` +
     `• <a href="https://needtnow.vercel.app">https://needtnow.vercel.app</a>\n` +
     `• <a href="https://web-ten-hazel-65.vercel.app">https://web-ten-hazel-65.vercel.app</a>\n\n` +
@@ -90,9 +189,10 @@ bot.command(['keys', 'status'], async (ctx: Context) => {
   await ctx.reply(text, { parse_mode: 'HTML', disable_web_page_preview: true })
 })
 
-/**
- * Push notification sent to Superadmin when a custom request ("Другое") is created
- */
+// ==========================================
+// 3. PUSH NOTIFICATIONS & SUPERADMIN WIZARD
+// ==========================================
+
 export async function notifySuperadminCustomRequest(
   requestId: string,
   requestTitle: string,
@@ -113,7 +213,7 @@ export async function notifySuperadminCustomRequest(
   const keyboard = new InlineKeyboard()
     .text('🏷️ Создать подкатегорию', `admin_map_cat:${requestId}`)
 
-  const recipientId = superadminTelegramId || 8859291375 // fallback admin id for demo
+  const recipientId = superadminTelegramId || 8859291375 
 
   try {
     await bot.api.sendMessage(recipientId, messageText, {
@@ -125,12 +225,9 @@ export async function notifySuperadminCustomRequest(
   }
 }
 
-// Callback Query Handler for Superadmin: Step 1 L1 Selection
 bot.callbackQuery(/^admin_map_cat:(.+)$/, async (ctx: Context) => {
   const requestId = ctx.match ? ctx.match[1] : ''
-  
   await ctx.answerCallbackQuery({ text: 'Выберите L1 рубрику из списка' })
-
   const keyboard = new InlineKeyboard()
     .text('🛵 1. Прокат', `admin_l1:${requestId}:transport`)
     .text('🏡 2. Жильё', `admin_l1:${requestId}:housing`)
@@ -138,80 +235,52 @@ bot.callbackQuery(/^admin_map_cat:(.+)$/, async (ctx: Context) => {
     .text('💵 3. Деньги', `admin_l1:${requestId}:finance`)
     .text('💼 4. Услуги', `admin_l1:${requestId}:services`)
     .row()
-    .text('🍽️ 5. Еда', `admin_l1:${requestId}:food`)
-    .text('🧹 6. Клининг', `admin_l1:${requestId}:cleaning`)
-    .row()
-    .text('💆 7. Красота', `admin_l1:${requestId}:beauty`)
-    .text('👶 8. Дети', `admin_l1:${requestId}:kids`)
-    .row()
-    .text('🗺️ 9. Туры', `admin_l1:${requestId}:tours`)
-    .text('🩺 10. Врачи', `admin_l1:${requestId}:health`)
-    .row()
-    .text('📦 11. Курьер', `admin_l1:${requestId}:courier`)
-    .text('🎈 12. Ивенты', `admin_l1:${requestId}:events`)
-    .row()
     .text('➕ 13. Новая L1 рубрика', `admin_l1:${requestId}:new_l1`)
 
   await ctx.editMessageText(
     `🏷️ <b>Шаг 1 из 2: Выберите главную L1-рубрику для привязки:</b>\n\n` +
     `Запрос ID: <code>${requestId}</code>`,
-    {
-      parse_mode: 'HTML',
-      reply_markup: keyboard,
-    }
+    { parse_mode: 'HTML', reply_markup: keyboard }
   )
 })
 
-// Callback Query Handler for Superadmin: Step 2 Text Prompt
 bot.callbackQuery(/^admin_l1:(.+):(.+)$/, async (ctx: Context) => {
   const requestId = ctx.match ? ctx.match[1] : ''
   const l1Slug = ctx.match ? ctx.match[2] : ''
   const userId = ctx.from?.id || 0
 
   if (userId) {
-    adminWizards[userId] = {
-      requestId,
-      l1Slug,
-    }
+    adminWizards[userId] = { requestId, l1Slug }
   }
 
   await ctx.answerCallbackQuery()
   await ctx.reply(
     `✍️ <b>Шаг 2 из 2: Напишите название новой L2/L3 подкатегории (услуги)</b>\n\n` +
-    `Отправьте ответное текстовое сообщение боту с названием новой услуги (например: <i>«Выгул собак»</i> или <i>«Капельница детокс»</i>).\n\n` +
-    `Оно автоматически сохранится в общей матрице каталога TuttoMinutto!`,
+    `Отправьте ответное текстовое сообщение боту с названием новой услуги.`,
     { parse_mode: 'HTML' }
   )
 })
 
-// Message Handler for Superadmin Text Reply
 bot.on('message:text', async (ctx: Context, next: NextFunction) => {
   const userId = ctx.from?.id || 0
   const wizardState = adminWizards[userId]
 
   if (wizardState && wizardState.requestId && ctx.message?.text) {
     const newCategoryTitle = ctx.message.text.trim()
-    
-    // Clear wizard state
     delete adminWizards[userId]
 
     const confirmationText = 
       `✅ <b>ОТЛИЧНО! Новая подкатегория создана и сохранена!</b>\n\n` +
       `📁 <b>L1 Рубрика:</b> <code>${wizardState.l1Slug}</code>\n` +
       `🏷️ <b>Новая подкатегория (L2/L3):</b> <b>${newCategoryTitle}</b>\n` +
-      `🔗 <b>Запрос</b> <code>${wizardState.requestId}</code> успешно привязан к новой услуге.\n\n` +
-      `🎉 Теперь эта услуга стала частью общей матрицы каталога TuttoMinutto и автоматически доступна всем пользователям для быстрых заказов!`
+      `🔗 <b>Запрос</b> <code>${wizardState.requestId}</code> успешно привязан.`
 
     await ctx.reply(confirmationText, { parse_mode: 'HTML' })
     return
   }
-
   return next()
 })
 
-/**
- * Push notification sent to Client when a provider or AI Agent submits a bid
- */
 export async function notifyClientNewBid(
   clientTelegramId: number,
   requestTitle: string,
@@ -222,7 +291,6 @@ export async function notifyClientNewBid(
 ): Promise<void> {
   const emoji = isAI ? '🤖' : '💬'
   const deepLink = `${appUrl}?startapp=request_${requestId}`
-
   try {
     await bot.api.sendMessage(
       clientTelegramId,
@@ -244,9 +312,6 @@ export async function notifyClientNewBid(
   }
 }
 
-/**
- * Push notification sent to Providers when a new request is created in their hub
- */
 export async function notifyProviderNewRequest(
   providerTelegramId: number,
   requestTitle: string,
@@ -278,9 +343,6 @@ export async function notifyProviderNewRequest(
   }
 }
 
-/**
- * Push notification sent to Subscribers when a new offer is added to a storefront
- */
 export async function notifySubscriberNewOffer(
   subscriberTelegramId: number,
   offerTitle: string,
@@ -291,7 +353,6 @@ export async function notifySubscriberNewOffer(
   imageUrl?: string
 ): Promise<void> {
   const deepLink = `${appUrl}?startapp=offer_${offerId}`
-
   const messageText = 
     `🔔 <b>Новое предложение по вашей подписке!</b>\n\n` +
     `📂 Категория: <b>${categoryName}</b>\n` +

@@ -217,6 +217,11 @@ export function App() {
         const found = DEFAULT_PRODUCTS.find((m) => m.id === parsedLink.id) || DEFAULT_PRODUCTS[0]
         if (found) setSelectedMarketProduct(found)
       }
+    } else if (startAppParam === 'create_request') {
+      setIsCreateOpen(true)
+    } else if (startAppParam === 'setup_business') {
+      setActiveTab('account')
+      // Note: Setting initial state for business tab could be done here if needed.
     }
 
     // Onboarding tutorial auto-display on first visit
