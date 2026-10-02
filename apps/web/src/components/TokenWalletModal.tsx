@@ -22,8 +22,6 @@ import WebApp from '@twa-dev/sdk'
 interface TokenWalletModalProps {
   isOpen: boolean
   onClose: () => void
-  currentBalance?: number
-  onTopUp?: (amount: number) => void
 }
 
 interface TransactionItem {
@@ -40,22 +38,17 @@ const INITIAL_TRANSACTIONS: TransactionItem[] = [
   { id: 'tx-3', type: 'expense', title: 'Создание аукциона', amount: '-10', date: 'Вчера, 19:15' },
 ]
 
-import { updateStoredBalance } from '../lib/balance'
+import { useTokenBalance } from '../lib/balance'
 
 export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
   isOpen,
   onClose,
-  currentBalance,
-  onTopUp,
 }) => {
-  // MUST DECLARE ALL HOOKS BEFORE ANY CONDITIONAL RETURN!
-  const [internalBalance, setInternalBalance] = useState(150)
-  const displayBalance = currentBalance !== undefined ? currentBalance : internalBalance
+  const [balance, addTokens] = useTokenBalance()
+  const displayBalance = balance
 
   const handleAddTokens = (amount: number) => {
-    setInternalBalance((prev) => prev + amount)
-    updateStoredBalance(amount)
-    if (onTopUp) onTopUp(amount)
+    addTokens(amount)
   }
 
   const [paymentMethod, setPaymentMethod] = useState<'stars' | 'ton' | 'card' | 'promo'>('stars')

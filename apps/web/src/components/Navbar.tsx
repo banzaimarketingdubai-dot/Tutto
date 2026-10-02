@@ -224,8 +224,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       <TokenWalletModal
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
-        currentBalance={tokenBalance}
-        onTopUp={(amount) => setTokenBalance(amount)}
       />
 
       <LocationSelectorModal

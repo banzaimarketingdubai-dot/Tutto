@@ -388,8 +388,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
       <TokenWalletModal 
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
-        currentBalance={tokenBalance}
-        onTopUp={(added) => setTokenBalance(added)}
       />
 
       {/* Profile Edit Modal Overlay */}

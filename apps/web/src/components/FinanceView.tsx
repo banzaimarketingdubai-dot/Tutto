@@ -258,8 +258,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onBack }) => {
       <TokenWalletModal
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
-        currentBalance={tokenBalance}
-        onTopUp={(added) => setTokenBalance(added)}
       />
     </div>
   )
