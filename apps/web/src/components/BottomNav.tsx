@@ -44,7 +44,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/[0.08] backdrop-blur-2xl px-4 pt-3 pb-6 sm:pb-3 z-50 transition-colors duration-300">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/[0.08] backdrop-blur-2xl px-4 pt-3 pb-6 sm:pb-3 z-40 transition-colors duration-300">
       <div className="max-w-[390px] mx-auto flex justify-between items-center relative">
         {navItems.map((item, index) => {
           const isActive = activeTab === item.id || (item.id === 'home' && activeTab === 'market')
