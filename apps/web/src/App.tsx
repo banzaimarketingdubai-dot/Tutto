@@ -545,11 +545,11 @@ export function App() {
                      </div>
                      <div className="flex items-start gap-3">
                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-black text-xs border border-[#CCFF00]/50">2</span>
-                       <p className="leading-tight"><strong className="text-white">Соберите заявки</strong><br/><span className="text-[11px] text-gray-400">Получайте отклики от покупателей рядом.</span></p>
+                       <p className="leading-tight"><strong className="text-white">Соберите предложения о покупке</strong><br/><span className="text-[11px] text-gray-400">Получайте отклики от покупателей рядом.</span></p>
                      </div>
                      <div className="flex items-start gap-3">
                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-black text-xs border border-[#CCFF00]/50">3</span>
-                       <p className="leading-tight"><strong className="text-white">Проведите сделку</strong><br/><span className="text-[11px] text-gray-400">Быстро продайте и получите деньги.</span></p>
+                       <p className="leading-tight"><strong className="text-white">Проведите сделку</strong><br/><span className="text-[11px] text-gray-400">Выберите покупателя с максимальной ценой и закройте сделку за час.</span></p>
                      </div>
                   </div>
                   <button

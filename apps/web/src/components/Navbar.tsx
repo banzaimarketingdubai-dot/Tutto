@@ -46,17 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [tokenBalance, setTokenBalance] = useState(150)
   const [currentHubId, setCurrentHubId] = useState<string>('phuket')
   const [locationName, setLocationName] = useState<string>('Укажите локацию')
-  const [isScrolled, setIsScrolled] = useState(false)
 
-  const langMenuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40)
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     if (!shouldFetchLocation) return
@@ -104,23 +94,21 @@ export const Navbar: React.FC<NavbarProps> = ({
     telegramUser?.photo_url ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'
 
+  const langMenuRef = useRef<HTMLDivElement>(null)
+
   return (
     <>
-      <header className={`w-full px-4 flex flex-col gap-3 relative z-[100] transition-all duration-300 sticky top-0 ${
-        isScrolled ? 'pt-2 pb-2 bg-[#0D1117]/95 backdrop-blur-xl border-b border-white/10' : 'pt-[max(env(safe-area-inset-top),60px)] pb-2 bg-transparent'
-      }`}>
+      <header className="w-full px-4 flex flex-col gap-3 relative z-[100] transition-all duration-300 pt-[max(env(safe-area-inset-top),60px)] pb-2 bg-transparent">
         {/* Top Row: Title, Slogan, Wallet & User Avatar (with Unread Notification Badge) */}
         <div className="flex items-center justify-between w-full">
           <div className="flex flex-col pt-1">
-            <h1 className={`font-display font-black tracking-wider leading-none flex items-center gap-1.5 transition-all duration-300 ${isScrolled ? 'text-[20px]' : 'text-[28px]'}`}>
+            <h1 className="font-display font-black tracking-wider leading-none flex items-center gap-1.5 transition-all duration-300 text-[28px]">
               <span className="glow-tutto">TUTTO</span>
               <span className="glow-minutto">MINUTTO</span>
             </h1>
-            {!isScrolled && (
-              <span className="text-[10px] font-bold text-white tracking-widest uppercase mt-1.5">
-                {t(currentLang, 'app_slogan')}
-              </span>
-            )}
+            <span className="text-[10px] font-bold text-white tracking-widest uppercase mt-1.5">
+              {t(currentLang, 'app_slogan')}
+            </span>
           </div>
 
           <div className="flex items-center gap-2.5 relative">
@@ -170,8 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Bottom Header Row: Location Badge (Left) & Language Selector (Right) */}
-        {!isScrolled && (
-          <div className="flex items-center justify-between w-full animate-fadeIn">
+        <div className="flex items-center justify-between w-full animate-fadeIn">
             {/* Location Selector */}
             <div
               id="tour-location-picker"
@@ -230,7 +217,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
           </div>
-        )}
       </header>
 
       <TokenWalletModal
