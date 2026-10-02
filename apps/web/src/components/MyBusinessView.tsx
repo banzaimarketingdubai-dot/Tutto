@@ -5,6 +5,7 @@ import { UserStorefrontScroller } from './UserStorefrontScroller'
 import { MOCK_OFFER_INSTANCES } from '../data/mockData'
 import { OfferInstance } from '../types'
 import { X, LayoutTemplate } from 'lucide-react'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface MyBusinessViewProps {
   onBack: () => void
@@ -21,6 +22,8 @@ export const MyBusinessView: React.FC<MyBusinessViewProps> = ({ onBack, bizCard 
   // Store Cards State
   const [instances, setInstances] = useState<OfferInstance[]>(MOCK_OFFER_INSTANCES)
   const [editingInstance, setEditingInstance] = useState<OfferInstance | null>(null)
+
+  useScrollLock(!!editingInstance)
 
   const handleSaveProfile = () => {
     setIsSaved(true)

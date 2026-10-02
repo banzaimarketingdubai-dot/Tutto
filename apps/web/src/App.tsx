@@ -7,7 +7,7 @@ import { TemplateCard } from './components/TemplateCard'
 import { CreateRequestModal } from './components/CreateRequestModal'
 import { AIAssistantModal } from './components/AIAssistantModal'
 import { BidModal } from './components/BidModal'
-import { BusinessProfileView } from './components/BusinessProfileView'
+import { UserProfileView } from './components/UserProfileView'
 import { DealChatModal } from './components/DealChatModal'
 import { OnboardingModal } from './components/OnboardingModal'
 import { BottomNav, TabId, AppMode } from './components/BottomNav'
@@ -612,7 +612,11 @@ export function App() {
           )}
 
           {activeTab === 'account' && (
-            <BusinessProfileView session={session} onOpenAdmin={() => setIsAdminDisputeOpen(true)} />
+            <UserProfileView 
+              session={session} 
+              onOpenAdmin={() => setIsAdminDisputeOpen(true)} 
+              onOpenAuth={() => setIsAuthOpen(true)}
+            />
           )}
         </main>
 
