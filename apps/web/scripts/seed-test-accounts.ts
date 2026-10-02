@@ -18,12 +18,13 @@ if (!supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const TEST_EMAILS = [
-  // TODO: Вставьте 5 email-адресов от заказчика сюда
-  'user1@example.com',
-  'user2@example.com',
-  'user3@example.com',
-  'user4@example.com',
-  'user5@example.com',
+  '0451611@gmail.com',
+  'banzaimarketingdubai@gmail.com',
+  'astikkhakun@gmail.com',
+  'shershadowcapital@gmail.com',
+  'dubble.ads@gmail.com',
+  'sherlock.bikes.asia@gmail.com',
+  'myworldandrogr@gmail.com'
 ]
 
 async function seed() {

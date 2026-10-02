@@ -877,6 +877,23 @@ export const MOCK_BUSINESS_CARDS: BusinessCard[] = [
     coverageArea: 'Бали, Пхукет',
     workingHours: '8:00 – 20:00',
     socialLinks: [],
+  },
+  {
+    id: 'biz-lifeisgood',
+    ownerEmail: 'myworldandrogr@gmail.com',
+    companyName: 'Life is Good',
+    tagline: 'Life is good',
+    description: 'Life is good services.',
+    logoUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=150&auto=format&fit=crop&q=80',
+    rating: 5.0,
+    dealsCount: 10,
+    isPro: false,
+    isAiEnabled: false,
+    servicesList: [],
+    advantages: [],
+    coverageArea: 'Remote',
+    workingHours: 'Flexible',
+    socialLinks: [],
   }
 ]
 
