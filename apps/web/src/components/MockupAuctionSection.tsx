@@ -3,7 +3,7 @@ import { Sparkles, Zap, ArrowRight, ShieldCheck, Heart, MapPin, Mic, Clock, Car,
 import { RequestItem } from '../types'
 import { SERVICE_TEMPLATES, CATEGORIES, MOCK_OFFER_INSTANCES } from '../data/mockData'
 import { triggerHapticFeedback } from '../lib/telegram'
-import { UserStorefrontScroller } from './UserStorefrontScroller'
+
 import { FeedHeader } from './FeedHeader'
 
 interface MockupAuctionSectionProps {
@@ -299,65 +299,8 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
     ? SERVICE_TEMPLATES.filter((tmpl) => tmpl.categoryL1Id === activeCategory)
     : SERVICE_TEMPLATES
 
-  // Helper to construct RequestItem list from templates with mandatory final "Другое" card
-  const makeSliderItems = (categoryFilter?: string, prefix: string = 'main'): RequestItem[] => {
-    const templates = categoryFilter
-      ? SERVICE_TEMPLATES.filter((tmpl) => tmpl.categoryL1Id === categoryFilter)
-      : SERVICE_TEMPLATES
-
-    const cards: RequestItem[] = templates.map((tmpl, idx) => ({
-      id: `${prefix}-card-${tmpl.id}-${idx}`,
-      clientId: 'demo-usr',
-      clientName: 'Александр',
-      clientAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      clientRating: 4.9,
-      hub: activeHub.toLowerCase() as any,
-      district: currentDistrict,
-      categoryL1Id: tmpl.categoryL1Id,
-      categoryL1Name: CATEGORIES.find((c) => c.id === tmpl.categoryL1Id)?.titleRu || 'Услуги',
-      title: tmpl.title,
-      description: tmpl.description,
-      budget: tmpl.defaultBudget,
-      currency: tmpl.currency || 'USD',
-      mediaUrls: [tmpl.coverImageUrl],
-      isFeatured: true,
-      status: 'open',
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 120 * 60 * 1000).toISOString(),
-      auctionEndsAt: new Date(Date.now() + 120 * 60 * 1000).toISOString(),
-      bidsCount: 4,
-    }))
-
-    // MANDATORY final card: "Другое / More"
-    const customOtherCard: RequestItem = {
-      id: `${prefix}-special-card-other`,
-      clientId: 'custom-usr',
-      clientName: 'TuttoMinutto',
-      clientAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      clientRating: 5.0,
-      hub: activeHub.toLowerCase() as any,
-      district: currentDistrict,
-      categoryL1Id: 'cat-other',
-      categoryL1Name: 'Другое',
-      title: 'ДРУГОЕ / СВОЙ ИНДИВИДУАЛЬНЫЙ ЗАПРОС',
-      description: 'Опишите вашу уникальную задачу — наш ИИ и суперадмин добавят её в матрицу!',
-      budget: null,
-      currency: 'USD',
-      mediaUrls: ['https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&auto=format&fit=crop&q=80'],
-      isFeatured: true,
-      status: 'open',
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 120 * 60 * 1000).toISOString(),
-      auctionEndsAt: new Date(Date.now() + 120 * 60 * 1000).toISOString(),
-      bidsCount: 0,
-    }
-
-    return [...cards, customOtherCard]
-  }
-
-  // Hero Main Slider Items filtered and sorted with user created requests at the top
-  const rawHeroItems = makeSliderItems(activeCategory || undefined, 'hero')
-  const combinedItems = [...requests, ...rawHeroItems]
+  // Only use actual user requests for the feed
+  const combinedItems = [...requests]
 
   let displayAuctionItems = combinedItems.filter((item) => {
     if (activeCategory && item.categoryL1Id && !item.id.includes('hero-')) {
@@ -400,8 +343,7 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
         onSortChange={setSortBy}
       />
 
-      {/* 1.75 USER STOREFRONT (My Showcase) */}
-      <UserStorefrontScroller instances={MOCK_OFFER_INSTANCES} />
+
 
       {/* 3. LIVE FEED (Fragment.com Style Cards) */}
       <div className="space-y-4 pt-2">
@@ -413,9 +355,17 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
         </div>
 
         <div className="flex flex-col gap-4">
-          {displayAuctionItems.slice(0, 10).map((item) => (
-            <AuctionRequestCard key={item.id} item={item} onOpenBidModal={onOpenBidModal} />
-          ))}
+          {displayAuctionItems.length > 0 ? (
+            displayAuctionItems.slice(0, 10).map((item) => (
+              <AuctionRequestCard key={item.id} item={item} onOpenBidModal={onOpenBidModal} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 px-6 bg-white/5 border border-white/10 rounded-[2rem] text-center">
+              <Search className="w-10 h-10 text-gray-500 mb-4 opacity-50" />
+              <h3 className="text-white font-bold text-lg mb-2">Нет активных запросов</h3>
+              <p className="text-gray-400 text-sm">В этой категории пока пусто. Будьте первыми, кто создаст запрос!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

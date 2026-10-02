@@ -46,7 +46,7 @@ export function shareToTelegram(type: 'request' | 'market', id: string, title: s
   const link = generateShareLink(type, id)
   const text = type === 'request' 
     ? `⚡ Быстрый аукцион на TuttoMinutto: «${title}». Нужен исполнитель!`
-    : `🔥 Горящее предложение в Барахолке: «${title}». Забронируйте со скидкой!`
+    : `🔥 Горящее предложение в Маркете: «${title}». Забронируйте со скидкой!`
 
   const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
 

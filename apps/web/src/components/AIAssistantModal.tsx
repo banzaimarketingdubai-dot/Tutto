@@ -12,6 +12,8 @@ interface AIAssistantModalProps {
   currentDistrict: string
   currentLang?: Language
   onSkipToManual?: () => void
+  initialPrompt?: string
+  startVoice?: boolean
 }
 
 type Message = { role: 'user' | 'model'; text: string }
@@ -24,6 +26,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   currentDistrict,
   currentLang,
   onSkipToManual,
+  initialPrompt,
+  startVoice,
 }) => {
   const lang = currentLang || detectDefaultLanguage()
   const [messages, setMessages] = useState<Message[]>([])
@@ -44,22 +48,39 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       // Init Speech Recognition
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
       if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition()
-        recognitionRef.current.continuous = false
-        recognitionRef.current.lang = 'ru-RU'
-        
-        recognitionRef.current.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript
-          handleUserSubmit(transcript)
+        if (!recognitionRef.current) {
+          recognitionRef.current = new SpeechRecognition()
+          recognitionRef.current.continuous = false
+          recognitionRef.current.lang = 'ru-RU'
+          
+          recognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript
+            handleUserSubmit(transcript)
+          }
+          recognitionRef.current.onend = () => setIsRecording(false)
+          recognitionRef.current.onerror = () => setIsRecording(false)
         }
-        recognitionRef.current.onend = () => setIsRecording(false)
-        recognitionRef.current.onerror = () => setIsRecording(false)
+      }
+
+      if (initialPrompt && initialPrompt.trim()) {
+         // Auto submit if text was typed in the main feed
+         setTimeout(() => {
+            handleUserSubmit(initialPrompt)
+         }, 300)
+      } else if (startVoice && recognitionRef.current) {
+         // Auto start recording
+         setTimeout(() => {
+            recognitionRef.current.start()
+            setIsRecording(true)
+         }, 300)
       }
     } else {
-      if (recognitionRef.current) recognitionRef.current.stop()
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
       setIsRecording(false)
     }
-  }, [isOpen])
+  }, [isOpen, initialPrompt, startVoice])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -80,17 +101,33 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     }
   }
 
-  const handleUserSubmit = async (text: string) => {
-    if (!text.trim() || isAnalyzing) return
+  // Wrap logic in a separate function to easily call it
+  const executeUserSubmit = async (text: string) => {
+    if (!text.trim()) return
     triggerHapticFeedback('light')
     
+    // Check if we are already analyzing
+    setIsAnalyzing(prev => {
+      if (prev) return true
+      return true
+    })
+
     const newMessages: Message[] = [...messages, { role: 'user', text }]
-    setMessages(newMessages)
+    
+    // We update messages by using functional update to ensure no race conditions
+    setMessages(prev => {
+      // prevent duplicate processing for the exact same auto-prompt
+      if (prev.length > 1 && prev[prev.length - 1].text === text) return prev;
+      return [...prev, { role: 'user', text }]
+    })
+    
     setInputText('')
-    setIsAnalyzing(true)
 
     try {
-      const response = await analyzeRequestFlowWithAI(newMessages, currentHub, currentDistrict)
+      // Use the newMessages variable here since state update is async
+      // But we need to use the full history
+      const history = [...messages, { role: 'user', text }] as Message[]
+      const response = await analyzeRequestFlowWithAI(history, currentHub, currentDistrict)
       if (response.status === 'clarify' && response.question) {
         setMessages(prev => [...prev, { role: 'model', text: response.question as string }])
       } else if (response.status === 'complete' && response.requestParams) {
@@ -101,6 +138,11 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const handleUserSubmit = (text: string) => {
+    if (isAnalyzing) return
+    executeUserSubmit(text)
   }
 
   if (!isOpen) return null

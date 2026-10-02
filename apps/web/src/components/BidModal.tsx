@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Zap, DollarSign, Bot, ShieldCheck, Share2 } from 'lucide-react'
+import { X, Zap, DollarSign, Bot, ShieldCheck, Share2, CheckCircle2 } from 'lucide-react'
 import { RequestItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { shareToTelegram } from '../lib/deeplink'
@@ -136,7 +136,7 @@ export const BidModal: React.FC<BidModalProps> = ({
               {/* My Offer Instances Carousel */}
               <div className="mb-4">
                 <label className="block text-gray-300 font-semibold mb-2 text-[14px]">
-                  Мои шаблоны предложений
+                  Мои шаблоны предложений <span className="text-gray-500 font-normal text-[12px]">(нажмите для прикрепления)</span>
                 </label>
                 <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 snap-x snap-mandatory">
                   {MOCK_OFFER_INSTANCES.map((offer) => (
@@ -179,6 +179,33 @@ export const BidModal: React.FC<BidModalProps> = ({
                   className="w-full bg-slate-900/90 border border-white/10 rounded-xl p-4 text-white text-[14px] focus:border-cyan-400 outline-none resize-none leading-relaxed"
                 />
               </div>
+
+              {/* Attached Card Preview */}
+              {selectedOffer && (
+                <div className="p-3 rounded-2xl bg-cyan-900/20 border border-cyan-500/30 flex flex-col gap-2">
+                  <div className="text-[12px] text-cyan-400 font-bold flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Прикрепленная карточка:</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHapticFeedback('light')
+                        setSelectedOffer(null)
+                        setPrice(request.budget ? String(request.budget) : '180')
+                        setComment('Готовы выполнить в лучшем виде. Доставим в течение 30 минут!')
+                      }}
+                      className="text-gray-400 hover:text-red-400 uppercase tracking-wider text-[10px]"
+                    >
+                      Открепить
+                    </button>
+                  </div>
+                  <div className="pointer-events-none">
+                    <OfferCard offer={selectedOffer} mode="chat" />
+                  </div>
+                </div>
+              )}
 
               {/* Business Guarantee Info */}
               <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-200 text-[13px] flex items-start gap-2.5 leading-snug">

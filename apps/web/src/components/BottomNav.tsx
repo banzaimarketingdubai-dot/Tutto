@@ -76,20 +76,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     type="button"
                     onClick={handleFabClick}
                     aria-label={mode === 'market' ? 'Добавить лот' : 'Создать заказ'}
-                    className={`absolute -top-6 flex items-center justify-center w-[64px] h-[64px] rounded-full border-2 transition-all duration-300 shadow-xl z-[60] ${
+                    className={`absolute -top-6 flex items-center justify-center w-[64px] h-[64px] rounded-full border transition-all duration-300 shadow-xl z-[60] overflow-hidden group backdrop-blur-xl ${
                       mode === 'rent'
-                        ? 'bg-gradient-to-br from-[#00D4E8] to-[#00F2FE] border-black shadow-[0_4px_25px_rgba(0,242,254,0.4)]'
+                        ? 'bg-[#00F2FE]/20 border-white/20 shadow-[0_4px_25px_rgba(0,242,254,0.4)] hover:bg-[#00F2FE]/30 hover:border-white/40'
                         : mode === 'services'
-                        ? 'bg-gradient-to-br from-[#FF2A85] to-[#FF007F] border-black shadow-[0_4px_25px_rgba(255,42,133,0.4)]'
-                        : 'bg-gradient-to-br from-[#B8E600] to-[#CCFF00] border-black shadow-[0_4px_25px_rgba(204,255,0,0.4)]'
+                        ? 'bg-[#FF2A85]/20 border-white/20 shadow-[0_4px_25px_rgba(255,42,133,0.4)] hover:bg-[#FF2A85]/30 hover:border-white/40'
+                        : 'bg-[#CCFF00]/20 border-white/20 shadow-[0_4px_25px_rgba(204,255,0,0.4)] hover:bg-[#CCFF00]/30 hover:border-white/40'
                     } ${
                       isFabClicked
                         ? 'scale-95 shadow-none'
                         : 'hover:scale-105'
                     }`}
                   >
+                    {/* Glass shine animation */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent w-full h-full animate-glass-shine" />
                     <Plus 
-                      className="w-9 h-9 transition-all duration-300 text-[#050811]" 
+                      className="w-9 h-9 transition-all duration-300 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] relative z-10" 
                       strokeWidth={3} 
                     />
                   </button>

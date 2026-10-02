@@ -16,7 +16,8 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react'
-import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
+import { triggerHapticFeedback, triggerNotificationFeedback, isTelegramEnvironment, BOT_TOKEN } from '../lib/telegram'
+import WebApp from '@twa-dev/sdk'
 
 interface TokenWalletModalProps {
   isOpen: boolean
@@ -114,13 +115,12 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
     })
   }
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     if (!activeInvoice) return
     triggerHapticFeedback('medium')
     setIsProcessing(true)
 
-    // Simulate Telegram Stars / TON Web3 payment API response
-    setTimeout(() => {
+    const processSuccess = () => {
       setIsProcessing(false)
       const tokensToAdd = activeInvoice.tokens
       onTopUp(tokensToAdd)
@@ -151,6 +151,48 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
       setTimeout(() => {
         setSuccessMsg(null)
       }, 5000)
+    }
+
+    if (activeInvoice.method === 'stars' && isTelegramEnvironment()) {
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'Пополнение баланса TUTTO',
+            description: `Пакет токенов: ${activeInvoice.tokens} Tutto`,
+            payload: activeInvoice.invoiceId,
+            provider_token: '',
+            currency: 'XTR',
+            prices: [{ label: 'Пакет токенов', amount: 1 }] // 1 Star for testing
+          })
+        })
+        
+        const data = await response.json()
+        
+        if (data.ok && data.result) {
+          WebApp.openInvoice(data.result, (status) => {
+            if (status === 'paid') {
+              processSuccess()
+            } else {
+              setIsProcessing(false)
+              triggerNotificationFeedback('error')
+            }
+          })
+        } else {
+          setIsProcessing(false)
+          triggerNotificationFeedback('error')
+        }
+      } catch (err) {
+        setIsProcessing(false)
+        triggerNotificationFeedback('error')
+      }
+      return
+    }
+
+    // Simulate Telegram Stars / TON Web3 payment API response for dev/browser mode
+    setTimeout(() => {
+      processSuccess()
     }, 1500)
   }
 

@@ -25,7 +25,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     tab_my_bids: 'ОТКЛИКИ',
     tab_chat: 'ЧАТ',
     tab_account: 'КАБИНЕТ',
-    tab_market: 'БАРАХОЛКА',
+    tab_market: 'МАРКЕТ',
     tab_explore: 'ПОИСК',
     tab_mine: 'МОЁ',
 
@@ -49,7 +49,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     
     // Feed & Headers
     header_active_requests: 'АКТИВНЫЕ ЗАПРОСЫ В ХАБЕ',
-    header_flash_market: 'БАРАХОЛКА (ГОРЯЩИЕ ТОВАРЫ & ЛОТЫ)',
+    header_flash_market: 'МАРКЕТ (ГОРЯЩИЕ ТОВАРЫ & ЛОТЫ)',
     header_search_explore: 'Поиск скутера, виллы, обмена...',
     header_quick_templates: 'Шаблоны в 1 клик',
     header_my_deals: 'Мои Сделки & Объявления',
@@ -59,7 +59,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     modal_notifications_sub: 'Сигналы аукционов и P2P-активность в реальном времени',
     filter_all: 'Все',
     filter_bids: 'Отклики',
-    filter_market: 'Барахолка',
+    filter_market: 'Маркет',
     filter_rewards: 'Монеты',
     btn_mark_all_read: 'Прочитать всё',
 
@@ -67,7 +67,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     admin_panel_title: 'ADMIN PANEL',
     admin_panel_sub: 'Управление платформой и арбитраж',
     tab_disputes: 'Арбитраж',
-    tab_analytics: 'Аналитика Барахолки',
+    tab_analytics: 'Аналитика Маркета',
     btn_in_favor_client: 'В пользу Клиента',
     btn_in_favor_provider: 'В пользу Бизнеса',
     btn_reject_dispute: 'Отклонить апелляцию',
@@ -108,7 +108,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     auth_title: 'Вход в систему',
     auth_sub: 'Войдите, чтобы создавать заявки, участвовать в аукционах и управлять профилем.',
     btn_publish_auction: 'Опубликовать заявку в аукцион',
-    btn_publish_market: '🔥 Опубликовать лот на Барахолке',
+    btn_publish_market: '🔥 Опубликовать лот в Маркете',
   },
 
   en: {

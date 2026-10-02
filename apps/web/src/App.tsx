@@ -155,6 +155,8 @@ export function App() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
+  const [aiInitialPrompt, setAiInitialPrompt] = useState<string>('')
+  const [aiStartVoice, setAiStartVoice] = useState<boolean>(false)
   const [selectedRequestForBid, setSelectedRequestForBid] = useState<RequestItem | null>(null)
 
   // Flash Market State
@@ -180,7 +182,12 @@ export function App() {
   useEffect(() => {
     initTelegramApp()
     
-    const handleOpenAiAssistant = () => setIsAIAssistantOpen(true)
+    const handleOpenAiAssistant = (e: Event) => {
+      const ce = e as CustomEvent
+      setAiInitialPrompt(ce.detail?.initialPrompt || '')
+      setAiStartVoice(ce.detail?.startVoice || false)
+      setIsAIAssistantOpen(true)
+    }
     document.addEventListener('open-ai-assistant', handleOpenAiAssistant)
 
     // Auth Session Check
@@ -249,6 +256,19 @@ export function App() {
       setUnreadChatCount(0)
     }
 
+    // Close all open popups/modals
+    setIsNotificationsOpen(false)
+    setIsCreateActionSheetOpen(false)
+    setIsCreateOpen(false)
+    setIsAIAssistantOpen(false)
+    setSelectedRequestForBid(null)
+    setIsCreateMarketListingOpen(false)
+    setSelectedMarketProduct(null)
+    setActiveDealRequest(null)
+    setActiveDealBid(null)
+    setIsAdminDisputeOpen(false)
+    setIsAuthOpen(false)
+
     setActiveTab(tab)
   }
 
@@ -290,7 +310,7 @@ export function App() {
   const handleCreateMarketListing = (newItem: MarketItem) => {
     setMarketProducts((prev) => [newItem, ...prev])
     setActiveCategory(null)
-    setNotificationMsg('🔥 Лот успешно опубликован в Барахолке!')
+    setNotificationMsg('🔥 Лот успешно опубликован в Маркете!')
     setTimeout(() => setNotificationMsg(null), 4000)
   }
 
@@ -472,9 +492,21 @@ export function App() {
               {mode === 'services' && (
                 <div className="absolute top-32 left-0 right-0 z-50 flex flex-col items-center justify-center p-8 bg-[#161B22]/80 backdrop-blur-xl rounded-[2rem] border border-[#FF2A85]/50 shadow-[0_0_50px_rgba(255,42,133,0.3)] mx-2">
                    <h3 className="text-2xl font-black text-white text-center mb-3 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Биржа Услуг</h3>
-                   <p className="text-sm text-gray-200 text-center font-medium leading-relaxed drop-shadow-md mb-6">
-                     Раздел находится на стадии закрытого тестирования. Скоро здесь появятся лучшие мастера, юристы и клининг-сервисы!
-                   </p>
+                   <div className="text-sm text-gray-200 text-left font-medium leading-relaxed drop-shadow-md mb-6 w-full max-w-[280px] space-y-3">
+                     <p className="font-bold text-center text-white mb-2 text-xs uppercase tracking-wide">Как это работает:</p>
+                     <div className="flex items-start gap-3">
+                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#FF2A85]/20 text-[#FF2A85] flex items-center justify-center font-black text-xs border border-[#FF2A85]/50">1</span>
+                       <p className="leading-tight"><strong className="text-white">Создайте запрос</strong><br/><span className="text-[11px] text-gray-400">Опишите задачу (клининг, ремонт, юрист).</span></p>
+                     </div>
+                     <div className="flex items-start gap-3">
+                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#FF2A85]/20 text-[#FF2A85] flex items-center justify-center font-black text-xs border border-[#FF2A85]/50">2</span>
+                       <p className="leading-tight"><strong className="text-white">Сравните цены</strong><br/><span className="text-[11px] text-gray-400">Получите отклики от проверенных профи.</span></p>
+                     </div>
+                     <div className="flex items-start gap-3">
+                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#FF2A85]/20 text-[#FF2A85] flex items-center justify-center font-black text-xs border border-[#FF2A85]/50">3</span>
+                       <p className="leading-tight"><strong className="text-white">Решите проблему</strong><br/><span className="text-[11px] text-gray-400">Выберите лучшие условия и сэкономьте.</span></p>
+                     </div>
+                   </div>
                    <button
                      onClick={() => {
                        triggerHapticFeedback('heavy')
@@ -505,9 +537,21 @@ export function App() {
 
               <div className="absolute top-32 left-0 right-0 z-50 flex flex-col items-center justify-center p-8 bg-[#161B22]/80 backdrop-blur-xl rounded-[2rem] border border-[#CCFF00]/50 shadow-[0_0_50px_rgba(204,255,0,0.3)] mx-2">
                   <h3 className="text-2xl font-black text-white text-center mb-3 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Быстрая продажа</h3>
-                  <p className="text-sm text-gray-200 text-center font-medium leading-relaxed drop-shadow-md mb-6">
-                    Горячие товары, аукционы вещей и P2P-сделки будут доступны в следующем обновлении. Следите за новостями!
-                  </p>
+                  <div className="text-sm text-gray-200 text-left font-medium leading-relaxed drop-shadow-md mb-6 w-full max-w-[280px] space-y-3">
+                     <p className="font-bold text-center text-white mb-2 text-xs uppercase tracking-wide">Как это работает:</p>
+                     <div className="flex items-start gap-3">
+                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-black text-xs border border-[#CCFF00]/50">1</span>
+                       <p className="leading-tight"><strong className="text-white">Выложите лот</strong><br/><span className="text-[11px] text-gray-400">Добавьте товар на продажу в 1 клик.</span></p>
+                     </div>
+                     <div className="flex items-start gap-3">
+                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-black text-xs border border-[#CCFF00]/50">2</span>
+                       <p className="leading-tight"><strong className="text-white">Соберите заявки</strong><br/><span className="text-[11px] text-gray-400">Получайте отклики от покупателей рядом.</span></p>
+                     </div>
+                     <div className="flex items-start gap-3">
+                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-black text-xs border border-[#CCFF00]/50">3</span>
+                       <p className="leading-tight"><strong className="text-white">Проведите сделку</strong><br/><span className="text-[11px] text-gray-400">Быстро продайте и получите деньги.</span></p>
+                     </div>
+                  </div>
                   <button
                     onClick={() => {
                       triggerHapticFeedback('heavy')
@@ -549,7 +593,7 @@ export function App() {
               onOpenMarketItem={(item) => setSelectedMarketProduct(item)}
               onDeleteMarketItem={(itemId) => {
                 setMarketProducts((prev) => prev.filter((i) => i.id !== itemId))
-                setNotificationMsg('🗑️ Лот удален из Барахолки')
+                setNotificationMsg('🗑️ Лот удален из Маркета')
                 setTimeout(() => setNotificationMsg(null), 3000)
               }}
               onDeleteRequest={(reqId) => {
@@ -583,6 +627,8 @@ export function App() {
 
         <AIAssistantModal
           isOpen={isAIAssistantOpen}
+          initialPrompt={aiInitialPrompt}
+          startVoice={aiStartVoice}
           onClose={() => setIsAIAssistantOpen(false)}
           currentHub={activeHub}
           currentDistrict="Равай" // Fallback district, could be dynamic
@@ -729,7 +775,8 @@ export function App() {
             } else if (action === 'template') {
               handleSelectTab('account') // Go to profile templates
             } else if (action === 'market') {
-              setIsCreateMarketListingOpen(true)
+              setNotificationMsg('✅ Вы добавлены в список раннего доступа! Мы пришлем уведомление в бота.')
+              setTimeout(() => setNotificationMsg(null), 4000)
             }
           }}
         />

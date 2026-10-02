@@ -168,7 +168,7 @@ export const CreateMarketListingModal: React.FC<CreateMarketListingModalProps> =
             </div>
             <div>
               <h3 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-1.5">
-                <span>Продать в Барахолке</span>
+                <span>Продать в Маркете</span>
                 <span className="text-[10px] bg-[#00F2FE]/20 text-[#00F2FE] px-1.5 py-0.5 rounded font-bold border border-[#00F2FE]/40">HOT</span>
               </h3>
               <p className="text-[11px] text-gray-400 font-medium">Добавьте до 10 фото и укажите скидку</p>

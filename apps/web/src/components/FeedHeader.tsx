@@ -48,7 +48,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
 
   useEffect(() => {
     let lastScrollY = window.scrollY
-    
+
     const updateScrollDir = () => {
       const scrollY = window.scrollY
       const direction = scrollY > lastScrollY ? 'down' : 'up'
@@ -58,7 +58,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
       setIsScrolled(scrollY > 50)
       lastScrollY = scrollY > 0 ? scrollY : 0
     }
-    
+
     window.addEventListener('scroll', updateScrollDir)
     return () => window.removeEventListener('scroll', updateScrollDir)
   }, [scrollDir])
@@ -68,39 +68,54 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
       {/* Search Bar (Scrolls with page) */}
       {showAiSearch && (
         <div className="px-2 mt-2">
-          <button
-            type="button"
-            onClick={() => {
-              triggerHapticFeedback('heavy')
-              document.dispatchEvent(new CustomEvent('open-ai-assistant'))
-            }}
-            className="w-full relative overflow-hidden group bg-white/5 backdrop-blur-xl border border-white/10 hover:border-[#00F2FE]/50 rounded-2xl p-4 flex items-center justify-between transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-[#00F2FE]/0 via-[#00F2FE]/10 to-[#00DFEA]/0 opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity" />
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00F2FE] to-[#00DFEA] flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+          <div className="w-full relative overflow-hidden group bg-white/5 backdrop-blur-xl border border-white/10 focus-within:border-[#00F2FE]/50 rounded-2xl p-2 flex flex-col transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#00F2FE]/0 via-[#00F2FE]/5 to-[#00DFEA]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none" />
+            
+            <div className="flex items-center gap-3 relative z-10 w-full p-2">
+              <div className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-[#00F2FE] to-[#00DFEA] flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.3)]">
                 <Sparkles className="w-5 h-5 text-black" />
               </div>
-              <div className="text-left">
-                <span className="block text-white font-bold text-sm">Что вы ищете?</span>
-                <span className="block text-gray-400 text-xs mt-0.5">Напишите или скажите голосом...</span>
+              
+              <div className="flex-1 w-full flex flex-col justify-center">
+                <input
+                  type="text"
+                  placeholder="Быстрый поиск с ИИ..."
+                  className="w-full bg-transparent text-white font-bold text-[15px] placeholder:text-gray-400 outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = e.currentTarget.value
+                      if (val.trim()) {
+                        triggerHapticFeedback('heavy')
+                        document.dispatchEvent(new CustomEvent('open-ai-assistant', { detail: { initialPrompt: val } }))
+                        e.currentTarget.value = ''
+                      }
+                    }
+                  }}
+                />
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHapticFeedback('heavy')
+                  document.dispatchEvent(new CustomEvent('open-ai-assistant', { detail: { startVoice: true } }))
+                }}
+                className="w-10 h-10 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative z-10 text-white group-hover:bg-white/20 transition-colors">
-              <Mic className="w-5 h-5" />
-            </div>
-          </button>
+          </div>
         </div>
       )}
 
       {/* Sticky Chips & Filters */}
-      <div 
-        className={`sticky top-[72px] z-40 transition-transform duration-300 ${
-          scrollDir === 'down' && isScrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-        }`}
+      <div
+        className={`sticky top-[72px] z-40 transition-transform duration-300 ${scrollDir === 'down' && isScrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+          }`}
       >
         <div className="bg-black/60 backdrop-blur-xl border-y border-white/5 py-3 space-y-3 shadow-lg">
-          
+
           {/* Categories Chips */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar px-2">
             {categories.map((cat) => {
@@ -109,11 +124,10 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                 <button
                   key={cat.id}
                   onClick={() => onSelectCategory(isActive ? null : cat.id)}
-                  className={`shrink-0 rounded-full flex items-center gap-1.5 px-3.5 py-2 cursor-pointer transition-all duration-200 border ${
-                    isActive
+                  className={`shrink-0 rounded-full flex items-center gap-1.5 px-3.5 py-2 cursor-pointer transition-all duration-200 border ${isActive
                       ? 'bg-[#00F2FE]/20 border-[#00F2FE]/60 text-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.3)]'
                       : 'bg-white/[0.05] border-white/10 text-gray-200 hover:bg-white/[0.1] hover:border-white/20'
-                  }`}
+                    }`}
                 >
                   <span className="text-[16px] leading-none">{cat.icon}</span>
                   <span className="text-[13px] font-bold tracking-wide uppercase">{cat.label}</span>
@@ -141,7 +155,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                   >✕</button>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
                 <span className="text-[10px] font-bold text-gray-400 uppercase mr-1 flex items-center gap-1 shrink-0">
                   <ArrowUpDown className="w-3 h-3 text-[#00F2FE]" /> Сорт:
@@ -153,9 +167,8 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                       triggerHapticFeedback('light')
                       onSortChange(s.id as any)
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold shrink-0 transition-all ${
-                      sortBy === s.id ? 'bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.4)]' : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold shrink-0 transition-all ${sortBy === s.id ? 'bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.4)]' : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                      }`}
                   >
                     {s.label}
                   </button>

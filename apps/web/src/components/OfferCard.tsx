@@ -91,7 +91,10 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, mode = 'feed', onAc
 
   if (mode === 'chat') {
     return (
-      <div className="w-full bg-[#070B12] rounded-2xl border border-white/10 overflow-hidden flex shadow-lg">
+      <div 
+        onClick={() => onAction && onAction(offer)}
+        className={`w-full bg-[#070B12] rounded-2xl border border-white/10 overflow-hidden flex shadow-lg ${onAction ? 'cursor-pointer hover:border-white/30 active:scale-[0.98] transition-all' : ''}`}
+      >
         <div className={`w-24 shrink-0 bg-gradient-to-br ${getFallbackGradient(offer.type)} relative`}>
           {offer.imageUrl ? (
             <img src={offer.imageUrl} alt={offer.title} className="w-full h-full object-cover" />
@@ -113,13 +116,9 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, mode = 'feed', onAc
               {offer.price} {offer.currency}
             </span>
             {onAction && (
-              <button
-                type="button"
-                onClick={() => onAction(offer)}
-                className={`w-6 h-6 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors ${getAccentColor(offer.type)}`}
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className={`text-[10px] font-bold uppercase tracking-wider ${getAccentColor(offer.type)} bg-white/5 px-2 py-1 rounded-lg`}>
+                Выбрать
+              </div>
             )}
           </div>
         </div>

@@ -39,7 +39,7 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'notif-4',
     type: 'market',
-    title: '🔥 Горящее предложение в Барахолке',
+    title: '🔥 Горящее предложение в Маркете',
     message: 'Скидка 40% на «Шлем Shoei Neotec II» в районе Chalong. Осталось 2 часа!',
     timestamp: '3 часа назад',
     isRead: true,

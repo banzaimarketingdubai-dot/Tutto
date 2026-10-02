@@ -81,21 +81,24 @@ export const CreateActionSheetModal: React.FC<CreateActionSheetModalProps> = ({
             <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
           </button>
 
-          {/* Tertiary Action: Market */}
+          {/* Tertiary Action: Market (Early Access) */}
           <button
             onClick={() => handleAction('market')}
-            className="w-full group relative overflow-hidden rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 p-4 flex items-center justify-between text-left transition-all active:scale-[0.98]"
+            className="w-full group relative overflow-hidden rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between text-left transition-all opacity-80 hover:opacity-100"
           >
             <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-[#CCFF00] group-hover:scale-110 group-hover:bg-[#CCFF00]/20 group-hover:border-[#CCFF00]/30 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-[#CCFF00]/10 border border-[#CCFF00]/20 flex items-center justify-center text-[#CCFF00] opacity-80">
                 <PackagePlus className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-200 text-base leading-tight">Лот в Барахолку</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-gray-200 text-base leading-tight">Лот в Маркет</h3>
+                  <span className="text-[9px] font-black uppercase bg-[#CCFF00]/20 text-[#CCFF00] px-1.5 py-0.5 rounded shadow-[0_0_8px_rgba(204,255,0,0.3)]">Скоро</span>
+                </div>
                 <p className="text-xs text-gray-400 mt-0.5">Быстрая продажа Б/У вещей</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-[#CCFF00] group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="w-5 h-5 text-gray-600 transition-all" />
           </button>
         </div>
         

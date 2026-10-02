@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { OfferInstance } from '../types'
-import { Eye, MousePointerClick, Edit2, LayoutTemplate } from 'lucide-react'
+import { Eye, MousePointerClick, Edit2 } from 'lucide-react'
 import { triggerHapticFeedback } from '../lib/telegram'
 import { OfferCard } from './OfferCard'
 
@@ -36,12 +36,6 @@ export const UserStorefrontScroller: React.FC<UserStorefrontScrollerProps> = ({ 
 
   return (
     <div className="mb-6 mt-2">
-      <div className="flex items-center gap-2 mb-3 px-2">
-        <LayoutTemplate className="w-4 h-4 text-amber-400" />
-        <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-          Моя Витрина
-        </h3>
-      </div>
       
       <div className="flex gap-3 overflow-x-auto no-scrollbar px-2 pb-2">
         {instances.map((instance) => {

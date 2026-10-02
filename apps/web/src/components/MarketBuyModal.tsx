@@ -56,7 +56,7 @@ export const MarketBuyModal: React.FC<MarketBuyModalProps> = ({
             </div>
             <div>
               <h3 className="font-display font-black text-sm text-white uppercase tracking-wider">
-                Детали лота Барахолки
+                Детали лота Маркета
               </h3>
               <p className="text-[11px] text-gray-400 font-medium">Горящее предложение от продавца</p>
             </div>

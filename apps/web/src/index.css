@@ -36,6 +36,18 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Prevent body scroll when modals are open. Targets high z-index fixed overlays */
+body:has(.fixed.inset-0.z-50),
+body:has(.fixed.inset-0.z-\[60\]),
+body:has(.fixed.inset-0.z-\[90\]),
+body:has(.fixed.inset-0.z-\[95\]),
+body:has(.fixed.inset-0.z-\[100\]),
+body:has(.fixed.inset-0.z-\[110\]),
+body:has(.fixed.inset-0.z-\[120\]),
+body:has(.fixed.inset-0.z-\[9999\]) {
+  overflow: hidden;
+}
+
 /* Hide scrollbar globally for Chrome, Safari and Opera */
 ::-webkit-scrollbar {
   display: none;
@@ -188,4 +200,15 @@ body {
 @keyframes cta-breathe {
   0%, 100% { opacity: 0.3; }
   50%      { opacity: 0.6; }
+}
+
+/* Glass Shine Effect for FAB */
+@keyframes glass-shine {
+  0% { transform: translateX(-150%) skewX(-30deg); }
+  30% { transform: translateX(200%) skewX(-30deg); }
+  100% { transform: translateX(200%) skewX(-30deg); }
+}
+
+.animate-glass-shine {
+  animation: glass-shine 3.5s ease-in-out infinite;
 }

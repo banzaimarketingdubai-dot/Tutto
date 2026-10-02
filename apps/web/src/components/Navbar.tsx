@@ -46,8 +46,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [tokenBalance, setTokenBalance] = useState(150)
   const [currentHubId, setCurrentHubId] = useState<string>('phuket')
   const [locationName, setLocationName] = useState<string>('Укажите локацию')
+  const [isScrolled, setIsScrolled] = useState(false)
 
   const langMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     if (!shouldFetchLocation) return
@@ -97,17 +106,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="w-full pt-[max(env(safe-area-inset-top),60px)] pb-2 px-4 flex flex-col gap-3 relative z-30">
+      <header className={`w-full px-4 flex flex-col gap-3 relative z-[100] transition-all duration-300 sticky top-0 ${
+        isScrolled ? 'pt-2 pb-2 bg-[#0D1117]/95 backdrop-blur-xl border-b border-white/10' : 'pt-[max(env(safe-area-inset-top),60px)] pb-2 bg-transparent'
+      }`}>
         {/* Top Row: Title, Slogan, Wallet & User Avatar (with Unread Notification Badge) */}
         <div className="flex items-center justify-between w-full">
           <div className="flex flex-col pt-1">
-            <h1 className="font-display text-[28px] font-black tracking-wider leading-none flex items-center gap-1.5">
+            <h1 className={`font-display font-black tracking-wider leading-none flex items-center gap-1.5 transition-all duration-300 ${isScrolled ? 'text-[20px]' : 'text-[28px]'}`}>
               <span className="glow-tutto">TUTTO</span>
               <span className="glow-minutto">MINUTTO</span>
             </h1>
-            <span className="text-[10px] font-bold text-white tracking-widest uppercase mt-1.5">
-              {t(currentLang, 'app_slogan')}
-            </span>
+            {!isScrolled && (
+              <span className="text-[10px] font-bold text-white tracking-widest uppercase mt-1.5">
+                {t(currentLang, 'app_slogan')}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5 relative">
@@ -157,65 +170,67 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Bottom Header Row: Location Badge (Left) & Language Selector (Right) */}
-        <div className="flex items-center justify-between w-full">
-          {/* Location Selector */}
-          <div
-            id="tour-location-picker"
-            onClick={() => {
-              triggerHapticFeedback('light')
-              setIsLocationOpen(true)
-            }}
-            className="flex items-center gap-1.5 bg-[#0D1117] border border-[#222222] rounded-full px-3 py-1 cursor-pointer hover:bg-[#161B22] transition-colors"
-          >
-            <MapPin className="w-3.5 h-3.5 text-[#00F2FE]" />
-            <span className="text-[12px] font-bold text-white tracking-wide">{locationName}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-1" />
-          </div>
-
-          {/* Language Switcher Pill (Positioned right at the location row level) */}
-          <div className="relative" ref={langMenuRef}>
-            <button
-              type="button"
-              aria-label="Переключить язык"
+        {!isScrolled && (
+          <div className="flex items-center justify-between w-full animate-fadeIn">
+            {/* Location Selector */}
+            <div
+              id="tour-location-picker"
               onClick={() => {
                 triggerHapticFeedback('light')
-                setIsLangOpen(!isLangOpen)
+                setIsLocationOpen(true)
               }}
-              className="flex items-center gap-1.5 bg-[#0D1117] border border-[#222222] rounded-full px-3 py-1 hover:bg-[#161B22] transition-colors text-xs font-bold text-white cursor-pointer"
+              className="flex items-center gap-1.5 bg-[#0D1117] border border-[#222222] rounded-full px-3 py-1 cursor-pointer hover:bg-[#161B22] transition-colors"
             >
-              <span>{activeLangOption.flag}</span>
-              <span className="uppercase">{activeLangOption.code}</span>
-              <ChevronDown className="w-3 h-3 text-gray-400" />
-            </button>
+              <MapPin className="w-3.5 h-3.5 text-[#00F2FE]" />
+              <span className="text-[12px] font-bold text-white tracking-wide">{locationName}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-1" />
+            </div>
 
-            {/* Language Dropdown Menu */}
-            {isLangOpen && (
-              <div className="absolute top-full right-0 mt-2 w-36 bg-[#0D1117]/95 backdrop-blur-2xl border border-white/20 rounded-2xl p-1.5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] z-[120] animate-fadeIn space-y-0.5">
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => {
-                      triggerHapticFeedback('medium')
-                      if (onLanguageChange) onLanguageChange(lang.code)
-                      setIsLangOpen(false)
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                      currentLang === lang.code
-                        ? 'bg-gradient-to-r from-[#00F2FE]/20 to-[#CCFF00]/20 text-[#00F2FE] border border-[#00F2FE]/40 shadow-[0_0_10px_rgba(0,242,254,0.3)]'
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>{lang.flag}</span>
-                      <span>{lang.label}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Language Switcher Pill (Positioned right at the location row level) */}
+            <div className="relative" ref={langMenuRef}>
+              <button
+                type="button"
+                aria-label="Переключить язык"
+                onClick={() => {
+                  triggerHapticFeedback('light')
+                  setIsLangOpen(!isLangOpen)
+                }}
+                className="flex items-center gap-1.5 bg-[#0D1117] border border-[#222222] rounded-full px-3 py-1 hover:bg-[#161B22] transition-colors text-xs font-bold text-white cursor-pointer"
+              >
+                <span>{activeLangOption.flag}</span>
+                <span className="uppercase">{activeLangOption.code}</span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </button>
+
+              {/* Language Dropdown Menu */}
+              {isLangOpen && (
+                <div className="absolute top-full right-0 mt-2 w-36 bg-[#0D1117]/95 backdrop-blur-2xl border border-white/20 rounded-2xl p-1.5 shadow-[0_15px_35px_rgba(0,0,0,0.9)] z-[120] animate-fadeIn space-y-0.5">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => {
+                        triggerHapticFeedback('medium')
+                        if (onLanguageChange) onLanguageChange(lang.code)
+                        setIsLangOpen(false)
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                        currentLang === lang.code
+                          ? 'bg-gradient-to-r from-[#00F2FE]/20 to-[#CCFF00]/20 text-[#00F2FE] border border-[#00F2FE]/40 shadow-[0_0_10px_rgba(0,242,254,0.3)]'
+                          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.label}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       <TokenWalletModal

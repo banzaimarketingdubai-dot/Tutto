@@ -495,7 +495,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="px-2 py-0.5 bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/40 text-[10px] font-bold rounded-full flex items-center gap-1">
-                        <Package className="w-3 h-3" /> БАРАХОЛКА
+                        <Package className="w-3 h-3" /> МАРКЕТ
                       </span>
                       {discountPercent && discountPercent > 0 && (
                         <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold rounded-full">

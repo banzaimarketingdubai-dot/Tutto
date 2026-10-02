@@ -158,7 +158,7 @@ export const AdminDisputePanel: React.FC<AdminDisputePanelProps> = ({
 
             {/* Mock Chart Area */}
             <div className="glass-panel p-4 border-white/10 rounded-2xl mt-4">
-              <h3 className="text-white font-bold text-sm mb-4">Активность Барахолки</h3>
+              <h3 className="text-white font-bold text-sm mb-4">Активность Маркета</h3>
               <div className="h-32 flex items-end justify-between gap-1 mt-6 border-b border-white/10 pb-2">
                 {[40, 70, 45, 90, 65, 85, 100].map((h, i) => (
                   <div key={i} className="w-full bg-gradient-to-t from-[#00F2FE] to-[#CCFF00] rounded-t-md opacity-80 hover:opacity-100 transition-opacity" style={{ height: `${h}%` }} />
@@ -234,7 +234,7 @@ export const AdminDisputePanel: React.FC<AdminDisputePanelProps> = ({
                 {/* Market */}
                 <div className="bg-[#070B12] p-3 rounded-xl border border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-300 font-bold uppercase tracking-wider">🔥 Барахолка</span>
+                    <span className="text-xs text-gray-300 font-bold uppercase tracking-wider">🔥 Маркет</span>
                   </div>
                   <div className="text-xs font-mono flex items-center gap-1.5">
                     <span className="text-[#00F2FE] font-black" title="Активные">88</span>

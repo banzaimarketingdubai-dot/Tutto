@@ -233,7 +233,7 @@ export const MyDealsAndListingsView: React.FC<MyDealsAndListingsViewProps> = ({
         <div className="space-y-3">
           {myMarketItems.length === 0 ? (
             <div className="glass-card p-6 text-center rounded-2xl border border-white/10 space-y-2">
-              <p className="text-xs text-gray-400">Вы пока не опубликовали ни одного горящего лота в Барахолке.</p>
+              <p className="text-xs text-gray-400">Вы пока не опубликовали ни одного горящего лота в Маркете.</p>
             </div>
           ) : (
             myMarketItems.map((item) => (
