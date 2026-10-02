@@ -8,18 +8,20 @@ import { AIManagerView } from './AIManagerView'
 import { FinanceView } from './FinanceView'
 
 interface BusinessProfileViewProps {
+  session?: any
   onOpenAdmin?: () => void
 }
 
-export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({ onOpenAdmin }) => {
+export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({ session, onOpenAdmin }) => {
   const user = getTelegramUser()
-  const bizCard = MOCK_BUSINESS_CARDS[0]
+  const email = session?.user?.email
+  const bizCard = MOCK_BUSINESS_CARDS.find(c => c.ownerEmail === email) || MOCK_BUSINESS_CARDS[0]
 
   const [activeSection, setActiveSection] = useState<'hub' | 'business' | 'ai' | 'finance'>('hub')
   const [isRulesOpen, setIsRulesOpen] = useState(false)
 
   if (activeSection === 'business') {
-    return <MyBusinessView onBack={() => setActiveSection('hub')} />
+    return <MyBusinessView onBack={() => setActiveSection('hub')} bizCard={bizCard} />
   }
 
   if (activeSection === 'ai') {

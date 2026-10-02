@@ -87,6 +87,7 @@ export interface UserProfile {
 
 export interface BusinessCard {
   id: string
+  ownerEmail?: string
   companyName: string
   tagline: string
   description: string

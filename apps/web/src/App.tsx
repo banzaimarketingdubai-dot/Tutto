@@ -612,7 +612,7 @@ export function App() {
           )}
 
           {activeTab === 'account' && (
-            <BusinessProfileView onOpenAdmin={() => setIsAdminDisputeOpen(true)} />
+            <BusinessProfileView session={session} onOpenAdmin={() => setIsAdminDisputeOpen(true)} />
           )}
         </main>
 

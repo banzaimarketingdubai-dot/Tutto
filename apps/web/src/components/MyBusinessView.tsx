@@ -8,13 +8,14 @@ import { X, LayoutTemplate } from 'lucide-react'
 
 interface MyBusinessViewProps {
   onBack: () => void
+  bizCard: any
 }
 
-export const MyBusinessView: React.FC<MyBusinessViewProps> = ({ onBack }) => {
+export const MyBusinessView: React.FC<MyBusinessViewProps> = ({ onBack, bizCard }) => {
   // Store Profile State
   const [storeType, setStoreType] = useState('rent')
-  const [storeName, setStoreName] = useState('Phuket Ride Express')
-  const [storeDesc, setStoreDesc] = useState('Аренда байков премиум-класса с бесплатной доставкой. Парк из 80+ новых байков Honda & Yamaha.')
+  const [storeName, setStoreName] = useState(bizCard.companyName || 'Store Name')
+  const [storeDesc, setStoreDesc] = useState(bizCard.description || '')
   const [isSaved, setIsSaved] = useState(false)
 
   // Store Cards State
