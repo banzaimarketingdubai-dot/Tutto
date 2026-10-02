@@ -4,7 +4,7 @@ import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/teleg
 import { UserStorefrontScroller } from './UserStorefrontScroller'
 import { MOCK_OFFER_INSTANCES } from '../data/mockData'
 import { OfferInstance } from '../types'
-import { X, LayoutTemplate } from 'lucide-react'
+import { X, LayoutTemplate, Upload } from 'lucide-react'
 import { useScrollLock } from '../hooks/useScrollLock'
 
 interface MyBusinessViewProps {
@@ -258,13 +258,36 @@ export const MyBusinessView: React.FC<MyBusinessViewProps> = ({ onBack, bizCard 
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-300 mb-1">URL изображения</label>
-                <input
-                  type="url"
-                  value={editingInstance.imageUrl || ''}
-                  onChange={(e) => setEditingInstance({ ...editingInstance, imageUrl: e.target.value })}
-                  className="w-full bg-[#070B12] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#00F2FE]"
-                />
+                <label className="block text-xs font-bold text-gray-300 mb-2">Изображение (Загрузка)</label>
+                <div className="relative group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const url = URL.createObjectURL(e.target.files[0])
+                        setEditingInstance({ ...editingInstance, imageUrl: url })
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="w-full h-24 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center bg-white/5 group-hover:bg-white/10 group-hover:border-[#00F2FE]/50 transition-all overflow-hidden relative">
+                    {editingInstance.imageUrl ? (
+                      <img src={editingInstance.imageUrl} alt="preview" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Загрузить фото</span>
+                      </>
+                    )}
+                    {editingInstance.imageUrl && (
+                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Upload className="w-6 h-6 text-white mb-1" />
+                        <span className="text-[10px] text-white font-bold uppercase tracking-wider">Изменить фото</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-2.5 pt-2">
