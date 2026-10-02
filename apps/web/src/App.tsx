@@ -32,6 +32,8 @@ import { Language, detectDefaultLanguage, setSavedLanguage } from './lib/i18n'
 import { parseDeepLinkParam } from './lib/deeplink'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
+import { SuperAdminPanelView } from './components/SuperAdminPanelView'
+
 export function App() {
   const [currentLang, setCurrentLang] = useState<Language>(() => detectDefaultLanguage())
   const [mode, setMode] = useState<AppMode>('rent')
@@ -169,6 +171,7 @@ export function App() {
   const [activeDealRequest, setActiveDealRequest] = useState<RequestItem | null>(null)
   const [activeDealBid, setActiveDealBid] = useState<BidItem | null>(null)
   const [isAdminDisputeOpen, setIsAdminDisputeOpen] = useState(false)
+  const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false)
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null)
 
   // Notifications Center State
@@ -206,6 +209,9 @@ export function App() {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('admin') === 'true') {
       setIsAdminDisputeOpen(true)
+    }
+    if (urlParams.get('superadmin') === 'true') {
+      setIsSuperAdminOpen(true)
     }
 
     const startAppParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam') || (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param
@@ -276,6 +282,7 @@ export function App() {
     setActiveDealRequest(null)
     setActiveDealBid(null)
     setIsAdminDisputeOpen(false)
+    setIsSuperAdminOpen(false)
     setIsAuthOpen(false)
 
     setActiveTab(tab)
@@ -730,6 +737,10 @@ export function App() {
             setIsAdminDisputeOpen(false)
           }}
         />
+
+        {isSuperAdminOpen && (
+          <SuperAdminPanelView onClose={() => setIsSuperAdminOpen(false)} />
+        )}
 
         <AuthModal
           isOpen={isAuthOpen}
