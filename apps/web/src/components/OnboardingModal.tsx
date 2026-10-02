@@ -93,7 +93,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
       {/* Main Centered Card */}
       <div 
         onClick={(e) => e.stopPropagation()} 
-        className="w-full max-w-sm bg-[#11151C] rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl relative z-20 flex flex-col items-center p-8 text-center"
+        className="w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain bg-[#11151C] rounded-[2rem] border border-white/10 shadow-2xl relative z-20 flex flex-col items-center p-8 text-center"
       >
         {/* Fullscreen OfferCard Background for Step 4 */}
         {(stepData as any).isOfferCardBg && (

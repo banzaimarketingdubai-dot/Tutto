@@ -37,7 +37,7 @@ export const CreateActionSheetModal: React.FC<CreateActionSheetModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="w-full sm:max-w-md bg-[#11151C] rounded-t-3xl sm:rounded-3xl border-t border-x sm:border-y border-white/10 p-5 pt-3 pb-8 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transform transition-transform duration-300"
+        className="w-full sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain bg-[#11151C] rounded-t-3xl sm:rounded-3xl border-t border-x sm:border-y border-white/10 p-5 pt-3 pb-8 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transform transition-transform duration-300"
         onClick={e => e.stopPropagation()}
       >
         <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />

@@ -87,7 +87,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-sm bg-gradient-to-b from-slate-900 to-[#0A101D] border border-white/10 rounded-[32px] overflow-hidden shadow-[0_0_50px_rgba(0,242,254,0.15)] animate-slideUp">
+      <div className="relative w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-slate-900 to-[#0A101D] border border-white/10 rounded-[32px] overflow-hidden shadow-[0_0_50px_rgba(0,242,254,0.15)] animate-slideUp">
         
         {/* Close button */}
         <button 

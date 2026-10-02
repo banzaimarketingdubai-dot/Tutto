@@ -761,32 +761,6 @@ export const MOCK_REQUESTS: RequestItem[] = [
 
 export const MOCK_BUSINESS_CARDS: BusinessCard[] = [
   {
-    id: 'biz-1',
-    companyName: 'Phuket Ride Express',
-    tagline: 'Аренда байков премиум-класса с бесплатной доставкой по острову',
-    description: 'Парк из 80+ новых байков Honda & Yamaha. Страховка, без залога паспорта, 2 чистоплотных шлема в комплекте.',
-    logoUrl: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=150&auto=format&fit=crop&q=80',
-    coverPhotoUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800&auto=format&fit=crop&q=80',
-    rating: 4.98,
-    dealsCount: 142,
-    isPro: true,
-    isAiEnabled: true,
-    servicesList: [
-      { name: 'Yamaha NMAX 2024 (день)', price: 18, unit: 'USD/день' },
-      { name: 'Honda PCX 160 (месяц)', price: 280, unit: 'USD/мес' },
-      { name: 'Доставка в любой район', price: 0, unit: 'бесплатно' },
-    ],
-    advantages: [
-      'Без залога оригинального паспорта',
-      'Бесплатная доставка от 5 дней',
-      'Новая резина и техническое ТО каждые 3000 км',
-      'Поддержка на русском 24/7',
-    ],
-    coverageArea: 'Пхукет (Раваи, Карон, Патонг, Банг Тао, Чалонг)',
-    workingHours: '8:00 – 22:00 ежедневно',
-    socialLinks: ['https://t.me/phuketridedemo', 'https://instagram.com/phuketridedemo'],
-  },
-  {
     id: 'biz-ihor',
     ownerEmail: '0451611@gmail.com',
     companyName: 'Ihor Sherlock Services',
