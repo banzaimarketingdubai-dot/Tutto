@@ -59,6 +59,20 @@ export const initTelegramApp = () => {
   if (isTelegramEnvironment()) {
     WebApp.ready()
     WebApp.expand()
+    
+    try {
+      // API 7.7+: Блокировка сворачивания свайпом вниз
+      if (typeof (WebApp as any).disableVerticalSwipes === 'function') {
+        (WebApp as any).disableVerticalSwipes()
+      }
+      // API 8.0+: Открытие в полноэкранном режиме
+      if (typeof (WebApp as any).requestFullscreen === 'function') {
+        (WebApp as any).requestFullscreen()
+      }
+    } catch (e) {
+      console.warn('Telegram WebApp new APIs not supported', e)
+    }
+
     WebApp.enableClosingConfirmation()
     // Match theme colors
     WebApp.setHeaderColor('#0B0F19')

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Shield, Sparkles, Bot, Check, Star, Edit3, ChevronRight, Store, Wallet, LayoutTemplate, Coins, Link2, Mail, MessageCircle, Heart, Clock } from 'lucide-react'
 import { MOCK_BUSINESS_CARDS } from '../data/mockData'
-import { getTelegramUser, triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
+import { getTelegramUser, triggerHapticFeedback, triggerNotificationFeedback, isTelegramEnvironment } from '../lib/telegram'
 import { PlatformRulesModal } from './PlatformRulesModal'
 import { MyBusinessView } from './MyBusinessView'
 import { AIManagerView } from './AIManagerView'
@@ -24,8 +24,14 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const [isWalletOpen, setIsWalletOpen] = useState(false)
   
   // Logic to determine name and avatar
-  const displayName = email ? (session?.user?.user_metadata?.name || bizCard.companyName) : (user?.first_name || 'Гость')
-  const displayAvatar = email ? (session?.user?.user_metadata?.avatar_url || bizCard.logoUrl) : (user?.photo_url || bizCard.logoUrl)
+  // In TMA: Telegram user data is the primary source
+  const isTMA = isTelegramEnvironment()
+  const displayName = user?.first_name
+    ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`
+    : email
+    ? (session?.user?.user_metadata?.name || bizCard.companyName)
+    : 'Гость'
+  const displayAvatar = user?.photo_url || (email ? session?.user?.user_metadata?.avatar_url : null) || bizCard.logoUrl
   
   // Account Binding Logic
   const hasEmailLinked = !!email
@@ -87,7 +93,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
         
         {/* Account Bindings */}
         <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2">
-          {!hasTelegramLinked && (
+          {!hasTelegramLinked && !isTMA && (
             <button onClick={handleLinkTelegram} className="flex items-center justify-between p-2.5 rounded-xl bg-[#0088cc]/10 border border-[#0088cc]/30 hover:bg-[#0088cc]/20 transition-colors">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-[#0088cc]" />
@@ -96,14 +102,22 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
               <ChevronRight className="w-4 h-4 text-[#0088cc]/50" />
             </button>
           )}
-          {!hasEmailLinked && (
-            <button onClick={handleLinkEmail} className="flex items-center justify-between p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-purple-400" />
-                <span className="text-purple-400 font-bold text-xs">Привязать Email</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-purple-400/50" />
-            </button>
+          {isTMA ? (
+            // В ТМА показываем статус что авторизация уже есть
+            <div className="flex items-center gap-2 text-[10px] text-emerald-400 bg-emerald-400/10 p-2 rounded-xl border border-emerald-400/20">
+              <Shield className="w-3.5 h-3.5" />
+              <span>Авторизован через Telegram ✓</span>
+            </div>
+          ) : (
+            !hasEmailLinked && (
+              <button onClick={handleLinkEmail} className="flex items-center justify-between p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-purple-400" />
+                  <span className="text-purple-400 font-bold text-xs">Привязать Email</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-purple-400/50" />
+              </button>
+            )
           )}
           {(hasTelegramLinked && hasEmailLinked) && (
              <div className="flex items-center gap-2 text-[10px] text-emerald-400 bg-emerald-400/10 p-2 rounded-xl border border-emerald-400/20">

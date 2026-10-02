@@ -190,7 +190,8 @@ export function App() {
     }
     document.addEventListener('open-ai-assistant', handleOpenAiAssistant)
 
-    // Auth Session Check
+    // Auth Session Check (only needed for web browser, not TMA)
+    // In Telegram Mini App, user identity comes from Telegram initData automatically
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
@@ -244,7 +245,10 @@ export function App() {
 
   const handleSelectTab = (tab: TabId) => {
     const isPlaywright = typeof window !== 'undefined' && Boolean((window as any).isPlaywright)
-    if ((tab === 'account' || tab === 'my-bids' || tab === 'chat') && !session && !isTelegramEnvironment() && !isPlaywright) {
+    // In TMA: user is always authenticated via Telegram initData — never show AuthModal
+    // In browser: require Supabase session for protected tabs
+    const isAuthenticated = isTelegramEnvironment() || !!session || isPlaywright
+    if ((tab === 'account' || tab === 'my-bids' || tab === 'chat') && !isAuthenticated) {
       setIsAuthOpen(true)
       triggerHapticFeedback('heavy')
       return
