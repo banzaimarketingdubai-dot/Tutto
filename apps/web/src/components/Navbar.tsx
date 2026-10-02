@@ -8,6 +8,8 @@ import { Session } from '@supabase/supabase-js'
 import { detectUserLocation } from '../lib/geo'
 import { Language, LANGUAGES, t } from '../lib/i18n'
 
+import { useTokenBalance } from '../lib/balance'
+
 interface NavbarProps {
   currentLang?: Language
   onLanguageChange?: (lang: Language) => void
@@ -43,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isWalletOpen, setIsWalletOpen] = useState(false)
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [isLangOpen, setIsLangOpen] = useState(false)
-  const [tokenBalance, setTokenBalance] = useState(150)
+  const [tokenBalance, setTokenBalance] = useTokenBalance()
   const [currentHubId, setCurrentHubId] = useState<string>('phuket')
   const [locationName, setLocationName] = useState<string>('Укажите локацию')
 
@@ -223,7 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
         currentBalance={tokenBalance}
-        onTopUp={(amount) => setTokenBalance((prev) => prev + amount)}
+        onTopUp={(amount) => setTokenBalance(amount)}
       />
 
       <LocationSelectorModal

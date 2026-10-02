@@ -22,8 +22,8 @@ import WebApp from '@twa-dev/sdk'
 interface TokenWalletModalProps {
   isOpen: boolean
   onClose: () => void
-  currentBalance: number
-  onTopUp: (amount: number) => void
+  currentBalance?: number
+  onTopUp?: (amount: number) => void
 }
 
 interface TransactionItem {
@@ -40,6 +40,8 @@ const INITIAL_TRANSACTIONS: TransactionItem[] = [
   { id: 'tx-3', type: 'expense', title: 'Создание аукциона', amount: '-10', date: 'Вчера, 19:15' },
 ]
 
+import { updateStoredBalance } from '../lib/balance'
+
 export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
   isOpen,
   onClose,
@@ -47,6 +49,15 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
   onTopUp,
 }) => {
   // MUST DECLARE ALL HOOKS BEFORE ANY CONDITIONAL RETURN!
+  const [internalBalance, setInternalBalance] = useState(150)
+  const displayBalance = currentBalance !== undefined ? currentBalance : internalBalance
+
+  const handleAddTokens = (amount: number) => {
+    setInternalBalance((prev) => prev + amount)
+    updateStoredBalance(amount)
+    if (onTopUp) onTopUp(amount)
+  }
+
   const [paymentMethod, setPaymentMethod] = useState<'stars' | 'ton' | 'card' | 'promo'>('stars')
   const [isProcessing, setIsProcessing] = useState(false)
   const [activeInvoice, setActiveInvoice] = useState<{
@@ -55,6 +66,7 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
     priceText: string
     invoiceId: string
   } | null>(null)
+
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const [promoCode, setPromoCode] = useState('')
@@ -82,7 +94,7 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
       triggerNotificationFeedback('success')
 
       const added = 1000
-      onTopUp(added)
+      handleAddTokens(added)
 
       // Add to transaction history
       const newTx: TransactionItem = {
@@ -123,7 +135,7 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
     const processSuccess = () => {
       setIsProcessing(false)
       const tokensToAdd = activeInvoice.tokens
-      onTopUp(tokensToAdd)
+      handleAddTokens(tokensToAdd)
 
       // Record transaction
       const methodTitle =
@@ -231,11 +243,11 @@ export const TokenWalletModal: React.FC<TokenWalletModalProps> = ({
             <div className="flex items-center justify-center gap-2 relative z-10">
               <Coins className="w-8 h-8 text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
               <span className="font-display font-black text-4xl text-white tracking-tight">
-                {currentBalance}
+                {displayBalance}
               </span>
             </div>
             <p className="text-[10px] text-amber-400/90 mt-1 relative z-10 font-mono font-semibold">
-              ≈ ${(currentBalance * 0.1).toFixed(2)} USD
+              ≈ ${(displayBalance * 0.1).toFixed(2)} USD
             </p>
 
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-bold">

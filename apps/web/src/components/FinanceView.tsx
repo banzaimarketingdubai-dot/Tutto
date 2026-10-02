@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
-import { Sparkles, Copy, Check, ChevronLeft, CreditCard, Wallet, AlertCircle, History, ArrowUpRight, ArrowDownRight, TrendingUp, Download } from 'lucide-react'
+import { Sparkles, Copy, Check, ChevronLeft, CreditCard, Wallet, AlertCircle, History, ArrowUpRight, ArrowDownRight, TrendingUp, Download, Coins } from 'lucide-react'
 import { triggerHapticFeedback } from '../lib/telegram'
+import { TokenWalletModal } from './TokenWalletModal'
+
+import { useTokenBalance } from '../lib/balance'
 
 interface FinanceViewProps {
   onBack: () => void
@@ -8,6 +11,8 @@ interface FinanceViewProps {
 
 export const FinanceView: React.FC<FinanceViewProps> = ({ onBack }) => {
   const [copiedRef, setCopiedRef] = useState(false)
+  const [isWalletOpen, setIsWalletOpen] = useState(false)
+  const [tokenBalance, setTokenBalance] = useTokenBalance()
 
   const handleCopyRef = () => {
     navigator.clipboard.writeText(`https://t.me/tuttominutto_bot?start=ref_phuket999`)
@@ -31,52 +36,107 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onBack }) => {
 
       {/* Balance Summary */}
       <div className="glass-card p-5 relative overflow-hidden border-amber-400/30 text-center space-y-2">
-        <div className="text-gray-400 font-bold uppercase tracking-wider text-[10px]">Ваш баланс</div>
+        <div className="text-gray-400 font-bold uppercase tracking-wider text-[10px]">Ваш баланс токенов</div>
         <div className="text-3xl font-black text-white flex items-center justify-center gap-2">
-          <span>0.00</span>
-          <StarIcon className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+          <Coins className="w-7 h-7 text-amber-400" />
+          <span>{tokenBalance} TUTTO</span>
         </div>
-        <div className="text-[10px] text-gray-500">Telegram Stars (MVP)</div>
+        <div className="text-[10px] text-amber-400/90 font-mono font-bold">
+          ≈ ${(tokenBalance * 0.1).toFixed(2)} USD (Telegram Stars &amp; TON Pay)
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setIsWalletOpen(true)
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 mx-auto hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(251,191,36,0.4)] cursor-pointer"
+          >
+            <Coins className="w-4 h-4" />
+            <span>Пополнить в Кошелек TUTTO</span>
+          </button>
+        </div>
       </div>
+
 
       {/* Payment Methods */}
       <div className="glass-card p-5 border-white/10 space-y-4">
-        <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-          <Wallet className="w-5 h-5 text-green-400" />
-          <div>
-            <h4 className="font-display font-bold text-sm text-white">Способы оплаты</h4>
-            <p className="text-[11px] text-gray-400">Для оплаты услуг платформы</p>
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-emerald-400" />
+            <div>
+              <h4 className="font-display font-bold text-sm text-white">Способы оплаты и пополнения</h4>
+              <p className="text-[11px] text-gray-400">Для работы в сервисе и покупки токенов</p>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between opacity-50 relative overflow-hidden">
+        <div className="space-y-2.5">
+          {/* Telegram Stars Card */}
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setIsWalletOpen(true)
+            }}
+            className="w-full p-3 bg-amber-400/10 border border-amber-400/30 rounded-2xl flex items-center justify-between hover:bg-amber-400/20 transition-all text-left cursor-pointer"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-6 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-md flex items-center justify-center">
-                <CreditCard className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 bg-amber-400/20 rounded-xl flex items-center justify-center border border-amber-400/40">
+                <StarIcon className="w-5 h-5 text-amber-400 fill-amber-400" />
               </div>
               <div>
-                <div className="font-bold text-white text-xs">Банковская карта</div>
-                <div className="text-[10px] text-gray-400">В разработке...</div>
+                <div className="font-bold text-white text-xs">Telegram Stars ⭐</div>
+                <div className="text-[10px] text-amber-300">Оплата прямо в Telegram без комиссии</div>
               </div>
             </div>
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
-               <span className="text-[10px] font-black bg-black/60 px-2 py-1 rounded text-white">СКОРО</span>
-            </div>
-          </div>
+            <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg">
+              Пополнить
+            </span>
+          </button>
 
-          <div className="p-3 bg-yellow-400/10 border border-yellow-400/30 rounded-xl flex items-center justify-between">
+          {/* TON Crypto Pay Card */}
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setIsWalletOpen(true)
+            }}
+            className="w-full p-3 bg-[#00F2FE]/10 border border-[#00F2FE]/30 rounded-2xl flex items-center justify-between hover:bg-[#00F2FE]/20 transition-all text-left cursor-pointer"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-400/20 rounded-full flex items-center justify-center">
-                <StarIcon className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              <div className="w-10 h-10 bg-[#00F2FE]/20 rounded-xl flex items-center justify-center border border-[#00F2FE]/40">
+                <Wallet className="w-5 h-5 text-[#00F2FE]" />
               </div>
               <div>
-                <div className="font-bold text-white text-xs">Telegram Stars</div>
-                <div className="text-[10px] text-yellow-400">Основной метод (MVP)</div>
+                <div className="font-bold text-white text-xs">TON &amp; Crypto Pay 💎</div>
+                <div className="text-[10px] text-cyan-300">TON Connect / Web3 Wallet</div>
               </div>
             </div>
-            <Check className="w-4 h-4 text-yellow-400" />
-          </div>
+            <span className="text-[10px] font-bold bg-[#00F2FE] text-slate-950 px-2.5 py-1 rounded-lg">
+              Пополнить
+            </span>
+          </button>
+
+          {/* Bank Card */}
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setIsWalletOpen(true)
+            }}
+            className="w-full p-3 bg-purple-500/10 border border-purple-500/30 rounded-2xl flex items-center justify-between hover:bg-purple-500/20 transition-all text-left cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center border border-purple-500/40">
+                <CreditCard className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <div className="font-bold text-white text-xs">Банковская карта 💳</div>
+                <div className="text-[10px] text-purple-300">Visa / Mastercard / СБП</div>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold bg-purple-500 text-white px-2.5 py-1 rounded-lg">
+              Пополнить
+            </span>
+          </button>
         </div>
       </div>
 
@@ -194,6 +254,13 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onBack }) => {
             </div>
         </div>
       </div>
+
+      <TokenWalletModal
+        isOpen={isWalletOpen}
+        onClose={() => setIsWalletOpen(false)}
+        currentBalance={tokenBalance}
+        onTopUp={(added) => setTokenBalance(added)}
+      />
     </div>
   )
 }
