@@ -347,8 +347,8 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
                         </button>
                       )}
                       {tx.status === 'completed' && tx.type === 'payment' && (
-                        <button className="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-bold rounded-lg hover:bg-rose-500/30 mr-2">
-                          Refund
+                        <button className="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-bold rounded-lg hover:bg-rose-500/30 mr-2" title="Компенсировать токены за эту операцию на внутренний баланс пользователя">
+                          Возврат токенов
                         </button>
                       )}
                     </td>
