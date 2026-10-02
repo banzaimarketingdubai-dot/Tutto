@@ -55,7 +55,7 @@ bot.command('start', async (ctx: Context) => {
     .text('💼 Хочу зарабатывать (Бизнес)', 'onboard:business')
 
   await ctx.replyWithPhoto(
-    'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800',
+    `${appUrl}/bot-welcome.png`,
     {
       caption: welcomeText,
       parse_mode: 'HTML',
