@@ -43,26 +43,6 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   showAiSearch = true,
   children
 }) => {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [scrollDir, setScrollDir] = useState<'up' | 'down'>('up')
-
-  useEffect(() => {
-    let lastScrollY = window.scrollY
-
-    const updateScrollDir = () => {
-      const scrollY = window.scrollY
-      const direction = scrollY > lastScrollY ? 'down' : 'up'
-      if (direction !== scrollDir && (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)) {
-        setScrollDir(direction)
-      }
-      setIsScrolled(scrollY > 50)
-      lastScrollY = scrollY > 0 ? scrollY : 0
-    }
-
-    window.addEventListener('scroll', updateScrollDir)
-    return () => window.removeEventListener('scroll', updateScrollDir)
-  }, [scrollDir])
-
   return (
     <div className="w-full flex flex-col gap-4">
       {/* Search Bar (Scrolls with page) */}
@@ -109,11 +89,8 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
         </div>
       )}
 
-      {/* Sticky Chips & Filters */}
-      <div
-        className={`sticky top-[72px] z-40 transition-transform duration-300 ${scrollDir === 'down' && isScrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-          }`}
-      >
+      {/* Chips & Filters (Now normally scrolling) */}
+      <div className="z-40">
         <div className="bg-black/60 backdrop-blur-xl border-y border-white/5 py-3 space-y-3 shadow-lg">
 
           {/* Categories Chips */}

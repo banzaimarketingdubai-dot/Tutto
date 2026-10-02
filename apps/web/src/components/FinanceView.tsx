@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, Copy, Check, ChevronLeft, CreditCard, Wallet, AlertCircle, History, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Sparkles, Copy, Check, ChevronLeft, CreditCard, Wallet, AlertCircle, History, ArrowUpRight, ArrowDownRight, TrendingUp, Download } from 'lucide-react'
 import { triggerHapticFeedback } from '../lib/telegram'
 
 interface FinanceViewProps {
@@ -121,18 +121,77 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Transactions History */}
-      <div className="glass-card p-5 border-white/10 space-y-4">
-        <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-          <History className="w-5 h-5 text-gray-400" />
-          <div>
-            <h4 className="font-display font-bold text-sm text-white">История транзакций</h4>
+      {/* Payment Statistics & History */}
+      <div className="glass-card p-5 border-white/10 space-y-5">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-400" />
+            <h4 className="font-display font-bold text-sm text-white">Статистика оплат</h4>
           </div>
+          <button className="text-[10px] text-gray-400 flex items-center gap-1 hover:text-white">
+             <Download className="w-3 h-3" /> Отчет
+          </button>
         </div>
-        
-        <div className="text-center py-6 text-gray-500">
-            <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>У вас пока нет транзакций</p>
+
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 gap-3">
+           <div className="bg-emerald-400/10 border border-emerald-400/20 rounded-xl p-3">
+              <p className="text-[10px] text-emerald-400/80 mb-1 uppercase font-bold">Доход за месяц</p>
+              <div className="text-emerald-400 font-black text-lg">+1,450 <span className="text-xs">TUTTO</span></div>
+           </div>
+           <div className="bg-red-400/10 border border-red-400/20 rounded-xl p-3">
+              <p className="text-[10px] text-red-400/80 mb-1 uppercase font-bold">Расход (Комиссии)</p>
+              <div className="text-red-400 font-black text-lg">-150 <span className="text-xs">TUTTO</span></div>
+           </div>
+        </div>
+
+        <div className="space-y-4 pt-2">
+            <h5 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Последние транзакции</h5>
+            
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                    <ArrowDownRight className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-white text-xs font-bold">Покупка лота "Yamaha NMAX"</p>
+                    <p className="text-gray-500 text-[10px]">Сегодня, 10:42</p>
+                  </div>
+                </div>
+                <div className="text-emerald-400 font-black text-sm">
+                  + 350 <span className="text-[9px]">TUTTO</span>
+                </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                    <ArrowDownRight className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-white text-xs font-bold">Услуга "Тайский массаж"</p>
+                    <p className="text-gray-500 text-[10px]">Вчера, 18:20</p>
+                  </div>
+                </div>
+                <div className="text-emerald-400 font-black text-sm">
+                  + 60 <span className="text-[9px]">TUTTO</span>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 opacity-80">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-white text-xs font-bold">Комиссия платформы (10%)</p>
+                    <p className="text-gray-500 text-[10px]">Вчера, 18:21</p>
+                  </div>
+                </div>
+                <div className="text-red-400 font-black text-sm">
+                  - 6 <span className="text-[9px]">TUTTO</span>
+                </div>
+            </div>
         </div>
       </div>
     </div>
