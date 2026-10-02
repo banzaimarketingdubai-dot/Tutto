@@ -108,69 +108,65 @@ ${conversationText}
         }
 
         // For other unknown errors, try the next model
-        continue
-      }
-    }
-
-    // Intelligent deterministic fallback parser (if all retries and models fail)
-      const userMsgs = conversation.filter(c => c.role === 'user').map(c => c.text).join(' ')
-      const userText = userMsgs.trim() || 'Запрос на услугу'
-      const lowerText = userText.toLowerCase()
-
-      // Extract budget safely
-      let extractedBudget = 0
-      const budgetMatch = lowerText.match(/(?:бюджет|цена|за)?\s*(\d+[\d\s]*)(?:\s*(?:бат|thb|\$|usd|руб|rub))?/i) || lowerText.match(/(\d{2,6})\s*(?:бат|thb|\$|usd|руб)/i)
-      if (budgetMatch && budgetMatch[1]) {
-        const parsedNum = parseInt(budgetMatch[1].replace(/\s+/g, ''), 10)
-        if (!isNaN(parsedNum) && parsedNum > 0) {
-          extractedBudget = parsedNum
-        }
-      }
-
-      let titleIntent = ''
-      let categoryName = 'УСЛУГИ'
-
-      // Check Transport FIRST
-      if (/байк|скутер|мото|nmax|pcx|авто|машин|прокат|аренд/i.test(lowerText)) {
-        titleIntent = `СНИМУ В АРЕНДУ: ${userText}`
-        categoryName = 'ПРОКАТ'
-      } else if (/дом|вилл|кондо|апарт|отел|жиль|сним/i.test(lowerText)) {
-        titleIntent = `СНИМУ: ${userText}`
-        categoryName = 'ЖИЛЬЁ'
-      } else if (/нян|сидел|беби|ребен/i.test(lowerText)) {
-        titleIntent = `ИЩУ няню: ${userText}`
-        categoryName = 'ДЕТИ'
-      } else if (/usdt|обмен|крипт|налич|менять|рубли/i.test(lowerText) && !/байк|скутер|авто|дом|вилл/i.test(lowerText)) {
-        titleIntent = `ОБМЕНЯЮ валюту: ${userText}`
-        categoryName = 'ДЕНЬГИ'
-      } else if (/купл|купит|покупк/i.test(lowerText)) {
-        titleIntent = `КУПЛЮ: ${userText}`
-        categoryName = 'ТОВАРЫ'
-      } else if (/клининг|уборк|виз|юрист|масс|мастер|ремонт/i.test(lowerText)) {
-        titleIntent = `ЗАКАЖУ: ${userText}`
-        categoryName = 'УСЛУГИ'
-      } else {
-        titleIntent = `ИЩУ: ${userText}`
-      }
-
-      // Safe clean title length truncate
-      if (titleIntent.length > 55) {
-        titleIntent = titleIntent.slice(0, 52) + '...'
-      }
-
-      return {
-        status: 'complete',
-        requestParams: {
-          title: titleIntent,
-          categoryName,
-          budget: extractedBudget,
-          description: userText,
-          district: currentDistrict,
-          hub: currentHub
-        }
       }
     }
   }
 
-  throw new Error('Failed to analyze request')
+  // Intelligent deterministic fallback parser (if all retries and models fail)
+  const userMsgs = conversation.filter(c => c.role === 'user').map(c => c.text).join(' ')
+  const userText = userMsgs.trim() || 'Запрос на услугу'
+  const lowerText = userText.toLowerCase()
+
+  // Extract budget safely
+  let extractedBudget = 0
+  const budgetMatch = lowerText.match(/(?:бюджет|цена|за)?\s*(\d+[\d\s]*)(?:\s*(?:бат|thb|\$|usd|руб|rub))?/i) || lowerText.match(/(\d{2,6})\s*(?:бат|thb|\$|usd|руб)/i)
+  if (budgetMatch && budgetMatch[1]) {
+    const parsedNum = parseInt(budgetMatch[1].replace(/\s+/g, ''), 10)
+    if (!isNaN(parsedNum) && parsedNum > 0) {
+      extractedBudget = parsedNum
+    }
+  }
+
+  let titleIntent = ''
+  let categoryName = 'УСЛУГИ'
+
+  // Check Transport FIRST
+  if (/байк|скутер|мото|nmax|pcx|авто|машин|прокат|аренд/i.test(lowerText)) {
+    titleIntent = `СНИМУ В АРЕНДУ: ${userText}`
+    categoryName = 'ПРОКАТ'
+  } else if (/дом|вилл|кондо|апарт|отел|жиль|сним/i.test(lowerText)) {
+    titleIntent = `СНИМУ: ${userText}`
+    categoryName = 'ЖИЛЬЁ'
+  } else if (/нян|сидел|беби|ребен/i.test(lowerText)) {
+    titleIntent = `ИЩУ няню: ${userText}`
+    categoryName = 'ДЕТИ'
+  } else if (/usdt|обмен|крипт|налич|менять|рубли/i.test(lowerText) && !/байк|скутер|авто|дом|вилл/i.test(lowerText)) {
+    titleIntent = `ОБМЕНЯЮ валюту: ${userText}`
+    categoryName = 'ДЕНЬГИ'
+  } else if (/купл|купит|покупк/i.test(lowerText)) {
+    titleIntent = `КУПЛЮ: ${userText}`
+    categoryName = 'ТОВАРЫ'
+  } else if (/клининг|уборк|виз|юрист|масс|мастер|ремонт/i.test(lowerText)) {
+    titleIntent = `ЗАКАЖУ: ${userText}`
+    categoryName = 'УСЛУГИ'
+  } else {
+    titleIntent = `ИЩУ: ${userText}`
+  }
+
+  // Safe clean title length truncate
+  if (titleIntent.length > 55) {
+    titleIntent = titleIntent.slice(0, 52) + '...'
+  }
+
+  return {
+    status: 'complete',
+    requestParams: {
+      title: titleIntent,
+      categoryName,
+      budget: extractedBudget,
+      description: userText,
+      district: currentDistrict,
+      hub: currentHub
+    }
+  }
 }
