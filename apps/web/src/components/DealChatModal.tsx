@@ -13,6 +13,7 @@ interface DealChatModalProps {
   onClose: () => void
   onCompleteDeal: () => void
   onNewMessage?: (msg: ChatMessage) => void
+  currentUserRole?: 'client' | 'provider'
 }
 
 interface ChatMessage {
@@ -32,18 +33,20 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
   onClose,
   onCompleteDeal,
   onNewMessage,
+  currentUserRole = 'client',
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [dealStatus, setDealStatus] = useState<DealStatusType>('in_progress')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [isNoticeExpanded, setIsNoticeExpanded] = useState(true)
-  const [simulatedRole, setSimulatedRole] = useState<'client' | 'provider'>('client')
+  const [simulatedRole, setSimulatedRole] = useState<'client' | 'provider'>(currentUserRole)
   const [showDisputeConfirm, setShowDisputeConfirm] = useState(false)
   const [hideScamWarning, setHideScamWarning] = useState(() => localStorage.getItem('hide_scam_warning') === 'true')
 
   useEffect(() => {
     if (isOpen && request && bid) {
+      setSimulatedRole(currentUserRole)
       setMessages([
         {
           id: 'msg-1',
@@ -206,6 +209,15 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
         timestamp: 'Только что',
       },
     ])
+  }
+
+  // Determine product name context
+  let productName = undefined
+  const offerMatch = bid.comment.match(/\[📌 Прикреплен шаблон: (.*?)\]/)
+  if (offerMatch) {
+    productName = offerMatch[1]
+  } else if (request.categoryL1Id === 'cat-market') {
+    productName = request.title.replace('Покупка: «', '').replace('»', '')
   }
 
   return (
@@ -491,7 +503,8 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
       <ReviewModal
         isOpen={showReviewModal}
         dealId={request.id}
-        targetName={bid.providerName}
+        targetName={simulatedRole === 'client' ? bid.providerName : request.clientName}
+        productName={productName}
         onClose={() => {
           setShowReviewModal(false)
           setDealStatus('completed')

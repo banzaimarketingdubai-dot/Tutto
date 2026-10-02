@@ -93,30 +93,30 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer, mode = 'feed', onAc
     return (
       <div 
         onClick={() => onAction && onAction(offer)}
-        className={`w-full bg-[#070B12] rounded-2xl border border-white/10 overflow-hidden flex shadow-lg ${onAction ? 'cursor-pointer hover:border-white/30 active:scale-[0.98] transition-all' : ''}`}
+        className={`w-full h-full bg-[#070B12] rounded-2xl border border-white/10 overflow-hidden flex shadow-lg ${onAction ? 'cursor-pointer hover:border-white/30 active:scale-[0.98] transition-all' : ''}`}
       >
-        <div className={`w-24 shrink-0 bg-gradient-to-br ${getFallbackGradient(offer.type)} relative`}>
+        <div className={`w-28 shrink-0 bg-gradient-to-br ${getFallbackGradient(offer.type)} relative`}>
           {offer.imageUrl ? (
             <img src={offer.imageUrl} alt={offer.title} className="w-full h-full object-cover" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center opacity-50">
-              <span className={`text-[10px] font-black tracking-widest uppercase ${getAccentColor(offer.type)} rotate-[-45deg]`}>
+              <span className={`text-[11px] font-black tracking-widest uppercase ${getAccentColor(offer.type)} -rotate-90 whitespace-nowrap`}>
                 {typeLabel}
               </span>
             </div>
           )}
         </div>
-        <div className="flex-1 p-3 flex flex-col justify-between">
+        <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
           <div>
-            <h4 className="text-white text-xs font-bold leading-tight line-clamp-1">{offer.title}</h4>
-            <p className="text-[10px] text-gray-400 mt-1 line-clamp-2 leading-relaxed">{offer.description}</p>
+            <h4 className="text-white text-[13px] font-bold leading-tight line-clamp-1 mb-1">{offer.title}</h4>
+            <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">{offer.description}</p>
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <span className={`font-black text-sm ${getAccentColor(offer.type)}`}>
+          <div className="flex items-center justify-between mt-2 gap-2">
+            <span className={`font-black text-sm truncate ${getAccentColor(offer.type)}`}>
               {offer.price} {offer.currency}
             </span>
             {onAction && (
-              <div className={`text-[10px] font-bold uppercase tracking-wider ${getAccentColor(offer.type)} bg-white/5 px-2 py-1 rounded-lg`}>
+              <div className={`text-[10px] shrink-0 font-bold uppercase tracking-wider ${getAccentColor(offer.type)} bg-white/5 px-2.5 py-1.5 rounded-lg`}>
                 Выбрать
               </div>
             )}

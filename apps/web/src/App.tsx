@@ -317,7 +317,7 @@ export function App() {
   const handleContactSeller = (item: MarketItem, deliveryMethod: string) => {
     const marketDealReq: RequestItem = {
       id: `req-market-${Date.now()}`,
-      clientId: 'usr-buyer',
+      clientId: 'usr-current',
       clientName: 'Покупатель',
       clientAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       clientRating: 5.0,
@@ -652,6 +652,7 @@ export function App() {
           isOpen={Boolean(activeDealRequest && activeDealBid)}
           request={activeDealRequest}
           bid={activeDealBid}
+          currentUserRole={activeDealRequest?.clientId === 'usr-current' ? 'client' : 'provider'}
           onClose={() => {
             setActiveDealRequest(null)
             setActiveDealBid(null)

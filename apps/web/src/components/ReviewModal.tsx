@@ -7,6 +7,7 @@ interface ReviewModalProps {
   isOpen: boolean
   dealId?: string
   targetName?: string
+  productName?: string
   onClose: () => void
   onSubmitReview: (review: Omit<ReviewItem, 'id' | 'createdAt'>) => void
 }
@@ -24,6 +25,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   isOpen,
   dealId = `deal-${Date.now()}`,
   targetName = 'Исполнитель',
+  productName,
   onClose,
   onSubmitReview,
 }) => {
@@ -73,6 +75,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       authorName: 'Александр',
       authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       targetName,
+      targetProductName: productName,
       rating,
       tags: selectedTags,
       comment: comment || 'Отличный сервис, всё вовремя и по честной цене!',
@@ -126,7 +129,16 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               <h2 className="text-lg font-black font-display text-white">
                 Как прошёл сервис с {targetName}?
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              {productName ? (
+                <div className="mt-2 text-[10px] text-cyan-300 bg-cyan-400/10 py-1.5 px-3 rounded-xl inline-block border border-cyan-400/20 font-medium">
+                  Прикреплено к: <strong className="font-extrabold text-[#00F2FE]">{productName}</strong>
+                </div>
+              ) : (
+                <div className="mt-2 text-[10px] text-gray-400 bg-white/5 py-1.5 px-3 rounded-xl inline-block border border-white/10 font-medium">
+                  Отзыв на профиль (без привязки к товару)
+                </div>
+              )}
+              <p className="text-xs text-gray-400 mt-2">
                 Поделитесь честным мнением и получите награду Karma
               </p>
             </div>

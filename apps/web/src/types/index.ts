@@ -129,6 +129,7 @@ export interface ReviewItem {
   authorName: string
   authorAvatar?: string
   targetName: string
+  targetProductName?: string
   rating: number
   tags: string[]
   comment: string

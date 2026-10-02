@@ -74,7 +74,12 @@ export const BidModal: React.FC<BidModalProps> = ({
     // Prefix the comment with offer info if one was selected
     let finalComment = comment
     if (selectedOffer) {
-      finalComment = `[Offer: ${selectedOffer.title}]\n${comment}`
+      const newPrice = parseFloat(price)
+      if (newPrice !== selectedOffer.price) {
+        finalComment = `[📌 Прикреплен шаблон: ${selectedOffer.title}]\n⚠️ Специальная цена для вас: $${newPrice} (вместо $${selectedOffer.price})\n\n${comment}`
+      } else {
+        finalComment = `[📌 Прикреплен шаблон: ${selectedOffer.title}]\n\n${comment}`
+      }
     }
     onSubmitBid(request.id, parseFloat(price), finalComment)
     onClose()
@@ -97,7 +102,7 @@ export const BidModal: React.FC<BidModalProps> = ({
             </div>
             <div>
               <h3 className="font-display font-bold text-lg text-white">
-                {isClarifying ? 'Уточнить детали' : 'Сделать оффер'}
+                {isClarifying ? 'Уточнить детали' : 'Сделать предложение'}
               </h3>
               <p className="text-sm text-[#00F2FE] line-clamp-1 font-medium">{request.title}</p>
             </div>
@@ -117,14 +122,14 @@ export const BidModal: React.FC<BidModalProps> = ({
             {request.mediaUrls && request.mediaUrls.length > 0 && (
               <img src={request.mediaUrls[0]} alt="Request" className="w-20 h-20 rounded-xl object-cover shrink-0 border border-white/10" />
             )}
-            <div className="flex flex-col gap-1.5 flex-1">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <span className="text-[16px] font-bold text-white leading-tight">{request.title}</span>
               <span className="text-[13px] text-gray-300 line-clamp-2 leading-snug">
                 {request.description || 'Описание не указано'}
               </span>
               <div className="flex items-center justify-between mt-auto pt-1">
                 <span className="text-[15px] font-black text-[#CCFF00]">Бюджет: ${request.budget || 'Не указан'}</span>
-                <span className="text-[12px] text-gray-400 font-medium">📍 {request.district}</span>
+                <span className="text-[12px] text-gray-400 font-medium truncate">📍 {request.district}</span>
               </div>
             </div>
           </div>
@@ -136,13 +141,13 @@ export const BidModal: React.FC<BidModalProps> = ({
               {/* My Offer Instances Carousel */}
               <div className="mb-4">
                 <label className="block text-gray-300 font-semibold mb-2 text-[14px]">
-                  Мои шаблоны предложений <span className="text-gray-500 font-normal text-[12px]">(нажмите для прикрепления)</span>
+                  Готовые шаблоны <span className="text-gray-500 font-normal text-[12px]">(нажмите, чтобы прикрепить к ответу)</span>
                 </label>
-                <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 snap-x snap-mandatory">
+                <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 snap-x snap-mandatory after:content-[''] after:w-6 after:shrink-0">
                   {MOCK_OFFER_INSTANCES.map((offer) => (
                     <div 
                       key={offer.id} 
-                      className={`w-[240px] shrink-0 snap-start transition-transform ${selectedOffer?.id === offer.id ? 'scale-[1.02] ring-2 ring-cyan-400 rounded-2xl' : 'opacity-80 hover:opacity-100'}`}
+                      className={`w-[260px] shrink-0 snap-start transition-transform ${selectedOffer?.id === offer.id ? 'scale-[1.02] ring-2 ring-cyan-400 rounded-2xl' : 'opacity-80 hover:opacity-100'}`}
                     >
                       <OfferCard 
                         offer={offer} 
@@ -156,7 +161,7 @@ export const BidModal: React.FC<BidModalProps> = ({
 
               {/* Proposed Price */}
               <div>
-                <label className="block text-gray-300 font-semibold mb-2 text-[14px]">Ваша цена ($ USD)</label>
+                <label className="block text-gray-300 font-semibold mb-2 text-[14px]">Предлагаемая цена ($ USD)</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -170,12 +175,12 @@ export const BidModal: React.FC<BidModalProps> = ({
 
               {/* Comment */}
               <div>
-                <label className="block text-gray-300 font-semibold mb-2 text-[14px]">Сообщение клиенту</label>
+                <label className="block text-gray-300 font-semibold mb-2 text-[14px]">Сообщение для клиента</label>
                 <textarea
                   rows={3}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Опишите ваши преимущества..."
+                  placeholder="Напишите, почему клиенту стоит выбрать именно вас..."
                   className="w-full bg-slate-900/90 border border-white/10 rounded-xl p-4 text-white text-[14px] focus:border-cyan-400 outline-none resize-none leading-relaxed"
                 />
               </div>
@@ -186,7 +191,7 @@ export const BidModal: React.FC<BidModalProps> = ({
                   <div className="text-[12px] text-cyan-400 font-bold flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Прикрепленная карточка:</span>
+                      <span>Прикреплено к ответу:</span>
                     </div>
                     <button
                       type="button"
@@ -211,13 +216,13 @@ export const BidModal: React.FC<BidModalProps> = ({
               <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-200 text-[13px] flex items-start gap-2.5 leading-snug">
                 <ShieldCheck className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
                 <div>
-                  <span>Ваш профиль и отзывные оценки будут прикреплены к офферу. Оплата принимается напрямую от клиента.</span>
+                  <span>Ваш профиль и рейтинг будут видны клиенту. Оплата производится напрямую.</span>
                 </div>
               </div>
             </>
           ) : (
             <div>
-              <label className="block text-amber-300 font-semibold mb-1.5">Что нужно уточнить у клиента?</label>
+              <label className="block text-amber-300 font-semibold mb-1.5">Какой вопрос вы хотите задать клиенту?</label>
               <textarea
                 rows={4}
                 value={clarifyText}
@@ -226,7 +231,7 @@ export const BidModal: React.FC<BidModalProps> = ({
                 className="w-full bg-slate-900/90 border border-white/10 rounded-xl p-3 text-white focus:border-amber-400 outline-none resize-none"
               />
               <p className="text-[10px] text-gray-400 mt-2">
-                Клиент получит пуш-уведомление. Как только он дополнит заявку, вы сможете сделать оффер с точной ценой.
+                Клиент получит уведомление. Как только он ответит, вы сможете предложить точную цену.
               </p>
             </div>
           )}
@@ -241,7 +246,7 @@ export const BidModal: React.FC<BidModalProps> = ({
                   : 'bg-gradient-to-r from-[#00F2FE] via-[#00DFEA] to-[#CCFF00] text-black shadow-[0_0_15px_rgba(0,242,254,0.4)] hover:opacity-90'
               }`}
             >
-              {isClarifying ? 'Отправить запрос клиенту' : 'Отправить встречное предложение'}
+              {isClarifying ? 'Отправить вопрос клиенту' : 'Отправить предложение'}
             </button>
 
             <div className="flex gap-2">
