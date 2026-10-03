@@ -108,7 +108,29 @@ export function playNotificationChime() {
     osc1.start(now)
     osc1.stop(now + 0.35)
   } catch {
-    // Audio context fallback if muted by browser autoplay policy
+    // Audio context fallback
   }
+}
+
+export function routeNewOfferNotification(
+  user: { telegramId?: number; telegramUsername?: string } | null,
+  requestTitle: string,
+  offersCount: number,
+  offerPreview?: { providerName: string; price: number }
+) {
+  const hasTelegram = Boolean(user && (user.telegramId || user.telegramUsername))
+
+  if (hasTelegram) {
+    // Channel A: Telegram Bot Light Notification (No message body clutter, only title + direct TMA button)
+    console.log(`[TG Bot Push] ⚡ Получены новые отклики по вашей заявке «${requestTitle}»! Button: [💬 Смотреть отклики в приложении]`)
+  } else {
+    // Channel B: Web / PWA Standalone App Push Notification
+    sendBrowserPushNotification(`⚡ Новый отклик на заявку!`, {
+      body: `«${requestTitle}»: отклик от ${offerPreview?.providerName || 'исполнителя'} за $${offerPreview?.price || ''}`,
+    })
+  }
+
+  // Play audio chime in active session
+  playNotificationChime()
 }
 

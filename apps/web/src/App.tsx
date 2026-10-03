@@ -33,6 +33,7 @@ import { parseDeepLinkParam } from './lib/deeplink'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 import { SuperAdminPanelView } from './components/SuperAdminPanelView'
+import { LiveOfferToast } from './components/LiveOfferToast'
 
 export function App() {
   const [currentLang, setCurrentLang] = useState<Language>(() => detectDefaultLanguage())
@@ -314,6 +315,13 @@ export function App() {
     setActiveCategory(null)
   }
 
+  const [activeLiveToast, setActiveLiveToast] = useState<{
+    message: string
+    subtext?: string
+    price?: number
+    providerName?: string
+  } | null>(null)
+
   const handleCreateRequest = (newReq: any) => {
     let catId = newReq.categoryL1Id
     const catName = newReq.categoryName || newReq.categoryL1Name || 'УСЛУГИ'
@@ -354,6 +362,16 @@ export function App() {
     setActiveTab('home')
     setNotificationMsg('⚡ Заявка создана и закреплена вверху вашей ленты!')
     setTimeout(() => setNotificationMsg(null), 4000)
+
+    // Trigger Realtime Live Offer Toast for inDrive experience
+    setTimeout(() => {
+      setActiveLiveToast({
+        message: '⚡ Новый оффер от Phuket Bike Rentals Co.!',
+        subtext: 'Yamaha NMAX 2024г. с доставкой в отель в Раваи',
+        price: 14,
+        providerName: 'Phuket Bike Rentals Co.',
+      })
+    }, 1800)
   }
 
   const handleCreateMarketListing = (newItem: MarketItem) => {
@@ -509,6 +527,21 @@ export function App() {
           <PillSwitcher mode={mode} onModeChange={handleModeChange} currentLang={currentLang} />
         )}
 
+        {/* Live Offer Realtime Notification Toast */}
+        {activeLiveToast && (
+          <LiveOfferToast
+            message={activeLiveToast.message}
+            subtext={activeLiveToast.subtext}
+            price={activeLiveToast.price}
+            providerName={activeLiveToast.providerName}
+            onOpen={() => {
+              setActiveCategory(null)
+              setActiveTab('home')
+            }}
+            onDismiss={() => setActiveLiveToast(null)}
+          />
+        )}
+
         {/* Notification Toast */}
         {notificationMsg && (
           <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-[#00F2FE] text-[#050811] font-black text-xs shadow-[0_0_25px_rgba(0,242,254,0.6)] flex items-center gap-2 animate-bounce">
@@ -535,6 +568,13 @@ export function App() {
                   onOpenBidModal={(req) => setSelectedRequestForBid(req)}
                   onOpenQuickRequest={() => setIsAIAssistantOpen(true)}
                   requests={requests}
+                  onAcceptBidDirectly={(req, bid) => {
+                    triggerHapticFeedback('heavy')
+                    setActiveDealRequest(req)
+                    setActiveDealBid(bid)
+                    setNotificationMsg(`🎉 Оффер от ${bid.providerName} на $${bid.proposedPrice} принят! Чат сделки открыт.`)
+                    setTimeout(() => setNotificationMsg(null), 4000)
+                  }}
                 />
               </div>
               

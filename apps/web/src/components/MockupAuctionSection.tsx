@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Sparkles, Zap, ArrowRight, ShieldCheck, Heart, MapPin, Mic, Clock, Car, Home, Wallet, Wrench, Package, Search, ArrowUpDown } from 'lucide-react'
-import { RequestItem } from '../types'
+import { RequestItem, BidItem } from '../types'
 import { SERVICE_TEMPLATES, CATEGORIES, MOCK_OFFER_INSTANCES } from '../data/mockData'
 import { triggerHapticFeedback } from '../lib/telegram'
-
 import { FeedHeader } from './FeedHeader'
+import { ClientOffersStream } from './ClientOffersStream'
 
 interface MockupAuctionSectionProps {
   mode?: 'rent' | 'services'
@@ -15,6 +15,7 @@ interface MockupAuctionSectionProps {
   onOpenBidModal: (request: RequestItem) => void
   onOpenQuickRequest: (request: RequestItem) => void
   requests: RequestItem[]
+  onAcceptBidDirectly?: (request: RequestItem, bid: BidItem) => void
 }
 
 const RENT_CATEGORIES = [
@@ -211,6 +212,7 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
   onOpenBidModal,
   onOpenQuickRequest,
   requests,
+  onAcceptBidDirectly,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -364,7 +366,12 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
 
           <div className="flex flex-col gap-3">
             {myRequests.map((item) => (
-              <MyPinnedRequestCard key={item.id} item={item} onOpenBidModal={onOpenBidModal} />
+              <MyPinnedRequestCard 
+                key={item.id} 
+                item={item} 
+                onOpenBidModal={onOpenBidModal} 
+                onAcceptBidDirectly={onAcceptBidDirectly}
+              />
             ))}
           </div>
         </div>
@@ -397,12 +404,110 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
   )
 }
 
-function MyPinnedRequestCard({ item, onOpenBidModal }: { item: RequestItem; onOpenBidModal: (item: RequestItem) => void }) {
+function getMockBidsForRequest(req: RequestItem): BidItem[] {
+  const t = req.title.toLowerCase()
+  if (t.includes('байк') || t.includes('скутер') || t.includes('nmax') || t.includes('pcx') || t.includes('прокат')) {
+    return [
+      {
+        id: `bid-${req.id}-1`,
+        requestId: req.id,
+        providerId: 'prov-1',
+        providerName: 'Phuket Bike Rentals Co.',
+        providerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        providerRating: 4.98,
+        isPro: true,
+        isAiAgent: false,
+        proposedPrice: req.budget && req.budget > 0 ? Math.max(10, Math.round(req.budget * 0.9)) : 14,
+        currency: 'USD',
+        comment: 'Yamaha NMAX 2024г. Бесплатная доставка в ваш отель в районе ' + req.district + '. 2 шлема + страховка.',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        mediaUrl: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop&q=80',
+      } as any,
+      {
+        id: `bid-${req.id}-2`,
+        requestId: req.id,
+        providerId: 'prov-2',
+        providerName: 'Rawai Moto Express',
+        providerAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
+        providerRating: 4.85,
+        isPro: true,
+        isAiAgent: true,
+        proposedPrice: req.budget && req.budget > 0 ? req.budget : 16,
+        currency: 'USD',
+        comment: 'Honda PCX 160cc в идеальном состоянии. Залог не нужен (копия паспорта). Встретим у отеля.',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+        mediaUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600&auto=format&fit=crop&q=80',
+      } as any,
+      {
+        id: `bid-${req.id}-3`,
+        requestId: req.id,
+        providerId: 'prov-3',
+        providerName: 'Ayana Luxury Mobility',
+        providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+        providerRating: 5.0,
+        isPro: true,
+        isAiAgent: false,
+        proposedPrice: req.budget && req.budget > 0 ? Math.round(req.budget * 1.1) : 20,
+        currency: 'USD',
+        comment: 'Премиум выбор: NMAX Tech MAX 2024 года, держатель для смартфона, дождевики и полная страховка.',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+        mediaUrl: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop&q=80',
+      } as any,
+    ]
+  }
+
+  return [
+    {
+      id: `bid-${req.id}-1`,
+      requestId: req.id,
+      providerId: 'prov-gen-1',
+      providerName: 'BanzAI Pro Services',
+      providerAvatar: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=100',
+      providerRating: 4.99,
+      isPro: true,
+      isAiAgent: true,
+      proposedPrice: req.budget && req.budget > 0 ? req.budget : 45,
+      currency: 'USD',
+      comment: 'Готовы выполнить вашу заявку быстро и на высшем уровне. Гарантия сервиса 100%.',
+      status: 'pending',
+      createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+      mediaUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80',
+    } as any,
+    {
+      id: `bid-${req.id}-2`,
+      requestId: req.id,
+      providerId: 'prov-gen-2',
+      providerName: 'Phuket Direct Express',
+      providerAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
+      providerRating: 4.88,
+      isPro: true,
+      isAiAgent: false,
+      proposedPrice: req.budget && req.budget > 0 ? Math.round(req.budget * 0.9) : 40,
+      currency: 'USD',
+      comment: 'Отличные условия в районе ' + req.district + '. Выезд мастера/специалиста в течение 30 минут.',
+      status: 'pending',
+      createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+      mediaUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80',
+    } as any,
+  ]
+}
+
+function MyPinnedRequestCard({
+  item,
+  onOpenBidModal,
+  onAcceptBidDirectly,
+}: {
+  item: RequestItem
+  onOpenBidModal: (item: RequestItem) => void
+  onAcceptBidDirectly?: (item: RequestItem, bid: BidItem) => void
+}) {
+  const bids = getMockBidsForRequest(item)
+
   return (
-    <div
-      onClick={() => onOpenBidModal(item)}
-      className="w-full rounded-3xl p-4.5 bg-gradient-to-br from-[#0A101D] via-[#0F172A] to-[#0A101D] border-2 border-[#00F2FE]/70 shadow-[0_0_30px_rgba(0,242,254,0.25)] flex flex-col gap-3 relative overflow-hidden cursor-pointer animate-fadeIn group"
-    >
+    <div className="w-full rounded-3xl p-4.5 bg-gradient-to-br from-[#0A101D] via-[#0F172A] to-[#0A101D] border-2 border-[#00F2FE]/70 shadow-[0_0_30px_rgba(0,242,254,0.25)] flex flex-col gap-3 relative overflow-hidden animate-fadeIn">
       <div className="absolute top-0 right-0 w-32 h-32 bg-[#00F2FE]/15 rounded-full blur-[40px] pointer-events-none" />
 
       {/* Header Badge */}
@@ -423,39 +528,26 @@ function MyPinnedRequestCard({ item, onOpenBidModal }: { item: RequestItem; onOp
 
       {/* Title & Description */}
       <div>
-        <h3 className="text-[18px] font-black text-white leading-tight mb-1 group-hover:text-[#00F2FE] transition-colors">
+        <h3 className="text-[18px] font-black text-white leading-tight mb-1">
           {item.title}
         </h3>
-        <p className="text-xs text-gray-300 leading-snug line-clamp-2">
+        <p className="text-xs text-gray-300 leading-snug">
           {item.description}
         </p>
       </div>
 
-      {/* Live AI / Supplier Bids Tracker */}
-      <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#00F2FE]/20 flex items-center justify-center text-[#00F2FE]">
-            <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
-          </div>
-          <div>
-            <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
-              <span>⚡ ИИ нашел {item.bidsCount || 3} предложений</span>
-            </div>
-            <div className="text-[10px] text-cyan-300">Поставщики уведомлены в районе {item.district}</div>
-          </div>
-        </div>
-
-        <button 
-          onClick={(e) => {
-            e.stopPropagation()
-            triggerHapticFeedback('heavy')
+      {/* InDrive Style Incoming Offers Stream */}
+      <ClientOffersStream
+        request={item}
+        bids={bids}
+        onAcceptOffer={(bid) => {
+          if (onAcceptBidDirectly) {
+            onAcceptBidDirectly(item, bid)
+          } else {
             onOpenBidModal(item)
-          }}
-          className="px-3.5 py-2 bg-gradient-to-r from-[#00F2FE] to-[#00C2FE] text-black font-black text-xs rounded-xl shadow-[0_0_15px_rgba(0,242,254,0.5)] hover:brightness-110 active:scale-95 transition-all"
-        >
-          Смотреть ({item.bidsCount || 3})
-        </button>
-      </div>
+          }
+        }}
+      />
     </div>
   )
 }
