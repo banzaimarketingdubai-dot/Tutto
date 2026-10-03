@@ -359,8 +359,8 @@ export function App() {
 
     setRequests((prev) => [createdItem, ...prev])
     setActiveCategory(null)
-    setActiveTab('home')
-    setNotificationMsg('⚡ Заявка создана и закреплена вверху вашей ленты!')
+    setActiveTab('my-bids')
+    setNotificationMsg('⚡ Заявка создана! Переходим в Центр Управления Откликами...')
     setTimeout(() => setNotificationMsg(null), 4000)
 
     // Trigger Realtime Live Offer Toast for inDrive experience
@@ -537,7 +537,7 @@ export function App() {
             providerName={activeLiveToast.providerName}
             onOpen={() => {
               setActiveCategory(null)
-              setActiveTab('home')
+              setActiveTab('my-bids')
             }}
             onDismiss={() => setActiveLiveToast(null)}
           />

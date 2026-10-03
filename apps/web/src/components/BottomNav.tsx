@@ -13,6 +13,7 @@ interface BottomNavProps {
   onCentralAction?: () => void
   currentLang?: Language
   unreadChatCount?: number
+  unreadBidsCount?: number
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -22,6 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onCentralAction,
   currentLang = 'ru',
   unreadChatCount = 2,
+  unreadBidsCount = 8,
 }) => {
   const [isFabClicked, setIsFabClicked] = useState(false)
 
@@ -106,6 +108,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     }`} 
                     strokeWidth={isActive ? 2.5 : 2}
                   />
+                  {/* Neon Unread Bids Badge on OTKLIKI icon */}
+                  {item.id === 'my-bids' && unreadBidsCount > 0 && (
+                    <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-[#CCFF00] text-black font-mono font-black text-[10px] flex items-center justify-center border border-black shadow-[0_0_10px_#CCFF00] animate-pulse">
+                      ⚡{unreadBidsCount}
+                    </span>
+                  )}
                   {/* Unread Chat Messages Badge on the Chat / Deals icon */}
                   {(item.id === 'chat' || item.id === 'mine') && unreadChatCount > 0 && (
                     <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#00F2FE] text-[#050811] font-black text-[10px] flex items-center justify-center border border-black shadow-[0_0_8px_#00F2FE]">
