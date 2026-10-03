@@ -45,27 +45,32 @@ export async function analyzeRequestFlowWithAI(
 
   const prompt = `
 Ты - главный ИИ-ассистент сервиса TuttoMinutto (обратный аукцион услуг и маркетплейс в курортных хабах).
-Твоя задача - проанализировать разговорную речь пользователя, ПОЛНОСТЬЮ УБРАТЬ РАЗГОВОРНЫЙ МУСОР И ВВОДНЫЕ СЛОВА ("привет", "слушай", "короче", "в общем", "типа", "мне бы", "хотел узнать", "напиши") и составить КРАТКУЮ, ЧЕТКУЮ профессиональную карточку запроса.
+Твоя задача - извлечь из разговорной речи пользователя параметры запроса, ПОЛНОСТЬЮ УБРАТЬ РАЗГОВОРНЫЙ МУСОР И ВВОДНЫЕ СЛОВА ("привет", "слушай", "короче", "в общем", "типа", "мне бы", "хотел узнать", "напиши") и составить КРАТКУЮ, ЧЕТКУЮ профессиональную карточку запроса.
 
-ОБЯЗАТЕЛЬНЫЕ ПРЕФИКСЫ ДЛЯ TITLE (выдели только СУТЬ предмета/услуги до 40 символов):
-1. Аренда транспорта -> "СНИМУ В АРЕНДУ: [Марка/Тип]" (например: "СНИМУ В АРЕНДУ: Скутер NMAX 155cc")
-2. Аренда жилья -> "СНИМУ: [Тип жилья и район]" (например: "СНИМУ: Виллу 3BR с бассейном")
-3. Обмен валют -> "ОБМЕНЯЮ: [Сумма и направление]" (например: "ОБМЕНЯЮ: 500 USDT на баты")
-4. Покупка товаров -> "КУПЛЮ: [Название товара]" (например: "КУПЛЮ: Шлем Shoei XL")
-5. Заказ услуг -> "ИЩУ:" или "ЗАКАЖУ: [Суть услуги]" (например: "ЗАКАЖУ: Клининг виллы")
+Текущие параметры GPS пользователя: Хаб ${currentHub}, Район по умолчанию: ${currentDistrict}.
 
 История общения:
 ${conversationText}
 
-Текущие параметры GPS: Хаб ${currentHub}, Район ${currentDistrict}.
+ПРАВИЛА ИЗВЛЕЧЕНИЯ:
+1. TITLE: Выдели СУТЬ предмета/услуги до 40 символов с правильным префиксом:
+   - Прокат транспорта -> "СНИМУ В АРЕНДУ: [Название/Модель]" (например: "СНИМУ В АРЕНДУ: Скутер NMAX 155cc")
+   - Аренда жилья -> "СНИМУ: [Тип жилья]" (например: "СНИМУ: Виллу 2BR с бассейном")
+   - Обмен денег -> "ОБМЕНЯЮ: [Сумма и валюта]" (например: "ОБМЕНЯЮ: 500 USDT на баты")
+   - Заказ услуг -> "ЗАКАЖУ: [Название услуги]" (например: "ЗАКАЖУ: Выездной массаж на виллу")
+   - Покупка товаров -> "КУПЛЮ: [Товар]" (например: "КУПЛЮ: Шлем Shoei XL")
+   - Общий поиск -> "ИЩУ: [Суть поиска]"
 
-КРИТИЧЕСКИЕ ПРАВИЛА ОЧИСТКИ:
-1. НИКОГДА не вставляй в title и description приветствия, разговорный сленг и мусорные слова ("привет", "слушай", "короче", "в общем", "мне бы").
-2. Title должен быть коротким (до 45 символов), емким и легко читаемым.
-3. Description должен содержать ЧЕТКУЮ СУТЬ в 1-2 предложениях (например: "Нужен скутер NMAX на 7 дней в районе Patong. Бюджет 1500 THB/сут.").
-4. Бюджет должен быть ЧИСЛОМ (например, 1500, а не 15!).
+2. CATEGORY (Выбери СТРОГО 1 из следующих категорий):
+   "ПРОКАТ" | "ЖИЛЬЁ" | "ДЕНЬГИ" | "УСЛУГИ" | "ЕДА" | "КЛИНИНГ" | "КРАСОТА" | "ДЕТИ" | "ТУРЫ" | "ВРАЧИ" | "ПРАКТИКИ" | "ТОВАРЫ" | "ДРУГОЕ"
 
-Верни СТРОГО только JSON следующего формата:
+3. BUDGET: Извлеки чистую цифру бюджета (например, если написано "$15 в день" или "1500 бат", верни число 15 или 1500). Если бюджет не назван, верни 0.
+
+4. DISTRICT: Если пользователь упомянул район в речи (например, "в Раваи", "на Патонге", "в Чангу"), определи его (например "Rawai", "Patong", "Canggu"). Если не упомянул, используй текущий GPS район: "${currentDistrict}".
+
+5. DESCRIPTION: 1-2 четких предложения с деталями БЕЗ приветствий и мусора.
+
+Верни СТРОГО только JSON:
 Для уточнения:
 {
   "status": "clarify",
@@ -78,8 +83,8 @@ ${conversationText}
   "requestParams": {
     "title": "СНИМУ В АРЕНДУ: Скутер NMAX 155cc",
     "categoryName": "ПРОКАТ",
-    "budget": 1500,
-    "description": "Нужен скутер NMAX на 7 дней в районе Patong. Бюджет 1500 THB/сут.",
+    "budget": 15,
+    "description": "Нужен скутер NMAX на 7 дней. Доставка в отель.",
     "district": "${currentDistrict}",
     "hub": "${currentHub}"
   }
@@ -133,13 +138,25 @@ export function parseDeterministicRequest(
 
   // Extract budget safely
   let extractedBudget = 0
-  const budgetMatch = lowerText.match(/(?:бюджет|цена|за)?\s*(\d+[\d\s]*)(?:\s*(?:бат|thb|\$|usd|руб|rub))?/i) || lowerText.match(/(\d{2,6})\s*(?:бат|thb|\$|usd|руб)/i)
+  const budgetMatch = lowerText.match(/(?:бюджет|цена|за|\$)?\s*(\d+[\d\s]*)(?:\s*(?:бат|thb|\$|usd|руб|rub|\/сут|\/день))?/i) || lowerText.match(/(\d{1,6})\s*(?:бат|thb|\$|usd|руб)/i)
   if (budgetMatch && budgetMatch[1]) {
     const parsedNum = parseInt(budgetMatch[1].replace(/\s+/g, ''), 10)
     if (!isNaN(parsedNum) && parsedNum > 0) {
       extractedBudget = parsedNum
     }
   }
+
+  // Detect district in text
+  let detectedDistrict = currentDistrict
+  if (/равай|rawai/i.test(lowerText)) detectedDistrict = 'Rawai'
+  else if (/патонг|patong/i.test(lowerText)) detectedDistrict = 'Patong'
+  else if (/чалонг|chalong/i.test(lowerText)) detectedDistrict = 'Chalong'
+  else if (/карон|karon/i.test(lowerText)) detectedDistrict = 'Karon'
+  else if (/камала|kamala/i.test(lowerText)) detectedDistrict = 'Kamala'
+  else if (/чангу|canggu/i.test(lowerText)) detectedDistrict = 'Canggu'
+  else if (/семиньяк|seminyak/i.test(lowerText)) detectedDistrict = 'Seminyak'
+  else if (/убуд|ubud/i.test(lowerText)) detectedDistrict = 'Ubud'
+  else if (/улувату|uluwatu/i.test(lowerText)) detectedDistrict = 'Uluwatu'
 
   let titleIntent = ''
   let categoryName = 'УСЛУГИ'
@@ -159,7 +176,22 @@ export function parseDeterministicRequest(
   } else if (/купл|купит|покупк/i.test(lowerText)) {
     titleIntent = `КУПЛЮ: ${cleanedText}`
     categoryName = 'ТОВАРЫ'
-  } else if (/клининг|уборк|виз|юрист|масс|мастер|ремонт/i.test(lowerText)) {
+  } else if (/клининг|уборк/i.test(lowerText)) {
+    titleIntent = `ЗАКАЖУ: ${cleanedText}`
+    categoryName = 'КЛИНИНГ'
+  } else if (/массаж|макияж|ногти|спа|стриж/i.test(lowerText)) {
+    titleIntent = `ЗАКАЖУ: ${cleanedText}`
+    categoryName = 'КРАСОТА'
+  } else if (/тур|экскурс|яхт|серф/i.test(lowerText)) {
+    titleIntent = `ЗАКАЖУ: ${cleanedText}`
+    categoryName = 'ТУРЫ'
+  } else if (/врач|доктор|капельниц|анализ/i.test(lowerText)) {
+    titleIntent = `ВЫЗОВУ: ${cleanedText}`
+    categoryName = 'ВРАЧИ'
+  } else if (/йог|таро|бачат|медитац/i.test(lowerText)) {
+    titleIntent = `ИЩУ: ${cleanedText}`
+    categoryName = 'ПРАКТИКИ'
+  } else if (/виз|юрист|ремонт|мастер/i.test(lowerText)) {
     titleIntent = `ЗАКАЖУ: ${cleanedText}`
     categoryName = 'УСЛУГИ'
   } else {
@@ -177,7 +209,7 @@ export function parseDeterministicRequest(
       categoryName,
       budget: extractedBudget,
       description: cleanedText,
-      district: currentDistrict,
+      district: detectedDistrict,
       hub: currentHub
     }
   }
