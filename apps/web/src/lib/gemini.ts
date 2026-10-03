@@ -22,6 +22,17 @@ export interface SmartAIResponse {
   errorMsg?: string
 }
 
+export function cleanUserText(rawText: string): string {
+  let cleaned = rawText
+    .replace(/\b(?:привет|приветик|здравствуйте|добрый\s+день|добрый\s+вечер|слушай|слушайте|короче|в\s+общем|типа|пожалуйста|подскажи|поскажи|мне\s+бы|хотел\s+бы|хочу|нужно|нужен|нужна|требуется|ищу|закажу|сдайте|дайте|ребят|ребята|всем)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,\.\!\?\:\-\s]+/, '')
+    .trim()
+
+  if (!cleaned) cleaned = rawText.trim()
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
 export async function analyzeRequestFlowWithAI(
   conversation: { role: 'user' | 'model', text: string }[],
   currentHub: string,
@@ -34,25 +45,25 @@ export async function analyzeRequestFlowWithAI(
 
   const prompt = `
 Ты - главный ИИ-ассистент сервиса TuttoMinutto (обратный аукцион услуг и маркетплейс в курортных хабах).
-Твоя задача - точно проанализировать диалог и составить качественную карточку запроса с ЧЕТКИМ ИНТЕНТОМ КЛИЕНТА.
+Твоя задача - проанализировать разговорную речь пользователя, ПОЛНОСТЬЮ УБРАТЬ РАЗГОВОРНЫЙ МУСОР И ВВОДНЫЕ СЛОВА ("привет", "слушай", "короче", "в общем", "типа", "мне бы", "хотел узнать", "напиши") и составить КРАТКУЮ, ЧЕТКУЮ профессиональную карточку запроса.
 
-ОБЯЗАТЕЛЬНЫЕ ИНТЕНТЫ (используй строго один из префиксов для title):
-1. Аренда транспорта (байки, скутеры, авто, NMAX, PCX) -> "СНИМУ В АРЕНДУ:" (например: "СНИМУ В АРЕНДУ: байк NMAX 155cc")
-2. Аренда жилья (дома, виллы, кондо, апартаменты) -> "СНИМУ:" (например: "СНИМУ: виллу с бассейном на Раваи")
-3. Обмен валют (USDT, рубли, баты, наличные) -> "ОБМЕНЯЮ:" (например: "ОБМЕНЯЮ: 500 USDT на баты")
-4. Покупка товаров/вещей -> "КУПЛЮ:" (например: "КУПЛЮ: шлем Shoei Neotec")
-5. Заказ услуг (няня, клининг, визы, юристы, ремонт, ивенты) -> "ИЩУ:" или "ЗАКАЖУ:" (например: "ИЩУ: няню для ребенка")
+ОБЯЗАТЕЛЬНЫЕ ПРЕФИКСЫ ДЛЯ TITLE (выдели только СУТЬ предмета/услуги до 40 символов):
+1. Аренда транспорта -> "СНИМУ В АРЕНДУ: [Марка/Тип]" (например: "СНИМУ В АРЕНДУ: Скутер NMAX 155cc")
+2. Аренда жилья -> "СНИМУ: [Тип жилья и район]" (например: "СНИМУ: Виллу 3BR с бассейном")
+3. Обмен валют -> "ОБМЕНЯЮ: [Сумма и направление]" (например: "ОБМЕНЯЮ: 500 USDT на баты")
+4. Покупка товаров -> "КУПЛЮ: [Название товара]" (например: "КУПЛЮ: Шлем Shoei XL")
+5. Заказ услуг -> "ИЩУ:" или "ЗАКАЖУ: [Суть услуги]" (например: "ЗАКАЖУ: Клининг виллы")
 
 История общения:
 ${conversationText}
 
 Текущие параметры GPS: Хаб ${currentHub}, Район ${currentDistrict}.
 
-КРИТИЧЕСКИЕ ПРАВИЛА:
-1. Если пользователь пишет "хочу байк на неделю ббюджет 1500 бат", это АРЕНДА БАЙКА ("СНИМУ В АРЕНДУ: байк на 7 дней"), а НЕ ОБМЕН ВАЛЮТЫ!
-2. Бюджет должен быть ЧИСЛОМ (например, 1500, а не 15!). Не разрезай числа на половине.
-3. Если информации недостаточно (нет понимания типа услуги или локации), задай один короткий уточняющий вопрос (status: "clarify").
-4. Если суть понятна, верни status: "complete" и заполни requestParams.
+КРИТИЧЕСКИЕ ПРАВИЛА ОЧИСТКИ:
+1. НИКОГДА не вставляй в title и description приветствия, разговорный сленг и мусорные слова ("привет", "слушай", "короче", "в общем", "мне бы").
+2. Title должен быть коротким (до 45 символов), емким и легко читаемым.
+3. Description должен содержать ЧЕТКУЮ СУТЬ в 1-2 предложениях (например: "Нужен скутер NMAX на 7 дней в районе Patong. Бюджет 1500 THB/сут.").
+4. Бюджет должен быть ЧИСЛОМ (например, 1500, а не 15!).
 
 Верни СТРОГО только JSON следующего формата:
 Для уточнения:
@@ -65,10 +76,10 @@ ${conversationText}
 {
   "status": "complete",
   "requestParams": {
-    "title": "СНИМУ В АРЕНДУ: байк на 7 дней (1500 бат/сут)",
+    "title": "СНИМУ В АРЕНДУ: Скутер NMAX 155cc",
     "categoryName": "ПРОКАТ",
     "budget": 1500,
-    "description": "Нужен скутер NMAX или аналогичный на 7 дней в районе Patong. Бюджет 1500 THB/сут.",
+    "description": "Нужен скутер NMAX на 7 дней в районе Patong. Бюджет 1500 THB/сут.",
     "district": "${currentDistrict}",
     "hub": "${currentHub}"
   }
@@ -116,8 +127,9 @@ export function parseDeterministicRequest(
   currentDistrict: string
 ): SmartAIResponse {
   const userMsgs = conversation.filter(c => c.role === 'user').map(c => c.text).join(' ')
-  const userText = userMsgs.trim() || 'Запрос на услугу'
-  const lowerText = userText.toLowerCase()
+  const rawUserText = userMsgs.trim() || 'Запрос на услугу'
+  const cleanedText = cleanUserText(rawUserText)
+  const lowerText = rawUserText.toLowerCase()
 
   // Extract budget safely
   let extractedBudget = 0
@@ -133,29 +145,29 @@ export function parseDeterministicRequest(
   let categoryName = 'УСЛУГИ'
 
   if (/байк|скутер|мото|nmax|pcx|авто|машин|прокат|аренд/i.test(lowerText)) {
-    titleIntent = `СНИМУ В АРЕНДУ: ${userText}`
+    titleIntent = `СНИМУ В АРЕНДУ: ${cleanedText}`
     categoryName = 'ПРОКАТ'
   } else if (/дом|вилл|кондо|апарт|отел|жиль|сним/i.test(lowerText)) {
-    titleIntent = `СНИМУ: ${userText}`
+    titleIntent = `СНИМУ: ${cleanedText}`
     categoryName = 'ЖИЛЬЁ'
   } else if (/нян|сидел|беби|ребен/i.test(lowerText)) {
-    titleIntent = `ИЩУ няню: ${userText}`
+    titleIntent = `ИЩУ няню: ${cleanedText}`
     categoryName = 'ДЕТИ'
   } else if (/usdt|обмен|крипт|налич|менять|рубли/i.test(lowerText) && !/байк|скутер|авто|дом|вилл/i.test(lowerText)) {
-    titleIntent = `ОБМЕНЯЮ валюту: ${userText}`
+    titleIntent = `ОБМЕНЯЮ: ${cleanedText}`
     categoryName = 'ДЕНЬГИ'
   } else if (/купл|купит|покупк/i.test(lowerText)) {
-    titleIntent = `КУПЛЮ: ${userText}`
+    titleIntent = `КУПЛЮ: ${cleanedText}`
     categoryName = 'ТОВАРЫ'
   } else if (/клининг|уборк|виз|юрист|масс|мастер|ремонт/i.test(lowerText)) {
-    titleIntent = `ЗАКАЖУ: ${userText}`
+    titleIntent = `ЗАКАЖУ: ${cleanedText}`
     categoryName = 'УСЛУГИ'
   } else {
-    titleIntent = `ИЩУ: ${userText}`
+    titleIntent = `ИЩУ: ${cleanedText}`
   }
 
-  if (titleIntent.length > 55) {
-    titleIntent = titleIntent.slice(0, 52) + '...'
+  if (titleIntent.length > 50) {
+    titleIntent = titleIntent.slice(0, 47) + '...'
   }
 
   return {
@@ -164,7 +176,7 @@ export function parseDeterministicRequest(
       title: titleIntent,
       categoryName,
       budget: extractedBudget,
-      description: userText,
+      description: cleanedText,
       district: currentDistrict,
       hub: currentHub
     }

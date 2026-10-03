@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw, Volume2, Radio } from 'lucide-react'
+import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw, Volume2, Radio, Edit3 } from 'lucide-react'
 import { analyzeRequestFlowWithAI, parseDeterministicRequest, ParsedRequest } from '../lib/gemini'
 import { triggerHapticFeedback, triggerNotificationFeedback, sendSuperadminErrorAlert } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
@@ -36,7 +36,12 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   const [liveTranscript, setLiveTranscript] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [finalCard, setFinalCard] = useState<ParsedRequest | null>(null)
+  const [isEditingCard, setIsEditingCard] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+
+  const updateFinalCard = (field: keyof ParsedRequest, value: any) => {
+    setFinalCard(prev => prev ? { ...prev, [field]: value } : null)
+  }
 
   const recognitionRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -363,30 +368,188 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           </div>
         )}
 
-        {/* Final Card Output */}
+        {/* Final Card Output - Interactive & Editable */}
         {finalCard && (
           <div className="flex flex-col gap-3 mt-2 animate-slideUp">
-            <div className="p-5 rounded-3xl bg-cyan-900/20 border border-cyan-500/40 shadow-[0_0_30px_rgba(0,242,254,0.15)]">
-              <div className="flex items-center gap-2 mb-3 text-cyan-300 font-bold text-[13px] uppercase tracking-wider">
-                <Sparkles className="w-4 h-4 text-cyan-400" />
-                Карточка запроса готовая к публикации
-              </div>
-              <h3 className="text-[18px] font-black text-white mb-2">{finalCard.title}</h3>
-              <p className="text-[14px] text-gray-300 mb-4 leading-relaxed">{finalCard.description}</p>
+            <div className="p-5 rounded-3xl bg-[#0F172A]/90 border border-cyan-500/50 shadow-[0_0_35px_rgba(0,242,254,0.2)] space-y-4">
               
-              <div className="flex flex-wrap gap-2 mb-5">
-                <span className="px-3 py-1.5 bg-white/10 rounded-xl text-[13px] text-white font-bold">💰 ${finalCard.budget || 'По договоренности'}</span>
-                <span className="px-3 py-1.5 bg-white/10 rounded-xl text-[13px] text-white font-bold">📍 {finalCard.district || currentDistrict}</span>
-                <span className="px-3 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-xl text-[13px] font-bold border border-cyan-500/30">📂 {finalCard.categoryName}</span>
+              {/* Header Badge */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span>Карточка запроса</span>
+                </div>
+                <button
+                  onClick={() => {
+                    triggerHapticFeedback('light')
+                    setIsEditingCard(!isEditingCard)
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isEditingCard 
+                      ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.5)]' 
+                      : 'bg-white/10 text-cyan-300 hover:bg-white/20 border border-white/10'
+                  }`}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isEditingCard ? 'Завершить редактирование' : 'Отредактировать'}</span>
+                </button>
               </div>
 
-              <button 
-                onClick={() => { triggerHapticFeedback('heavy'); triggerNotificationFeedback('success'); onPublish(finalCard); onClose() }}
-                className="w-full py-3.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[16px] rounded-xl flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.4)] hover:brightness-110 active:scale-95 transition-all cursor-pointer"
-              >
-                <Check className="w-5 h-5" />
-                Опубликовать заявку сейчас
-              </button>
+              {isEditingCard ? (
+                /* Editable Form Controls */
+                <div className="space-y-3.5 animate-fadeIn">
+                  <div>
+                    <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                      Заголовок заявки
+                    </label>
+                    <input
+                      type="text"
+                      value={finalCard.title}
+                      onChange={e => updateFinalCard('title', e.target.value)}
+                      className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-sm focus:border-cyan-400 outline-none transition-all shadow-[0_0_10px_rgba(0,242,254,0.1)]"
+                      placeholder="Заголовок заявки..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                      Описание (Суть запроса)
+                    </label>
+                    <textarea
+                      value={finalCard.description}
+                      onChange={e => updateFinalCard('description', e.target.value)}
+                      rows={3}
+                      className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-gray-200 text-sm focus:border-cyan-400 outline-none transition-all resize-none shadow-[0_0_10px_rgba(0,242,254,0.1)]"
+                      placeholder="Подробное описание..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-1">
+                        Бюджет ($ / THB)
+                      </label>
+                      <input
+                        type="number"
+                        value={finalCard.budget || ''}
+                        onChange={e => updateFinalCard('budget', parseFloat(e.target.value) || 0)}
+                        className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-amber-400 font-bold text-sm focus:border-cyan-400 outline-none transition-all"
+                        placeholder="0 = договоренность"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                        Район
+                      </label>
+                      <input
+                        type="text"
+                        value={finalCard.district || ''}
+                        onChange={e => updateFinalCard('district', e.target.value)}
+                        className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-sm focus:border-cyan-400 outline-none transition-all"
+                        placeholder="Район..."
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                      Категория
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['ПРОКАТ', 'ЖИЛЬЁ', 'УСЛУГИ', 'ДЕНЬГИ', 'ТОВАРЫ', 'ДЕТИ'].map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            triggerHapticFeedback('light')
+                            updateFinalCard('categoryName', cat)
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            finalCard.categoryName === cat
+                              ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+                              : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Card Preview with Direct Quick Edit Button */
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-[18px] font-black text-white leading-tight">{finalCard.title}</h3>
+                    <button
+                      onClick={() => {
+                        triggerHapticFeedback('light')
+                        setIsEditingCard(true)
+                      }}
+                      className="p-1 text-cyan-400 hover:text-cyan-300 shrink-0 rounded-lg hover:bg-white/5 transition-colors"
+                      title="Редактировать карточку"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-[14px] text-gray-300 leading-relaxed bg-black/40 p-3.5 rounded-2xl border border-white/5">
+                    {finalCard.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <span className="px-3 py-1.5 bg-amber-500/10 text-amber-300 rounded-xl text-xs font-bold border border-amber-500/20">
+                      💰 ${finalCard.budget || 'По договоренности'}
+                    </span>
+                    <span className="px-3 py-1.5 bg-white/10 text-gray-200 rounded-xl text-xs font-bold border border-white/10">
+                      📍 {finalCard.district || currentDistrict}
+                    </span>
+                    <span className="px-3 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-xl text-xs font-bold border border-cyan-500/30">
+                      📂 {finalCard.categoryName}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirm / Reset Buttons */}
+              <div className="pt-2 flex flex-col gap-2 border-t border-white/10">
+                <button 
+                  onClick={() => {
+                    triggerHapticFeedback('heavy')
+                    triggerNotificationFeedback('success')
+                    onPublish(finalCard)
+                    onClose()
+                  }}
+                  className="w-full py-3.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[16px] rounded-xl flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.4)] hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Check className="w-5 h-5" />
+                  <span>Подтвердить и опубликовать</span>
+                </button>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {!isEditingCard && (
+                    <button
+                      onClick={() => setIsEditingCard(true)}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-white/5"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Отредактировать поля</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      triggerHapticFeedback('medium')
+                      setFinalCard(null)
+                    }}
+                    className="text-xs text-gray-400 hover:text-rose-300 font-semibold flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-white/5 ml-auto"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Сбросить карточку</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         )}

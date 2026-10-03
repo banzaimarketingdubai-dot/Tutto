@@ -299,8 +299,11 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
     ? SERVICE_TEMPLATES.filter((tmpl) => tmpl.categoryL1Id === activeCategory)
     : SERVICE_TEMPLATES
 
-  // Only use actual user requests for the feed
-  const combinedItems = [...requests]
+  // User's own active requests (Pinned at top!)
+  const myRequests = requests.filter((r) => r.clientId === 'usr-current' || (r.clientName && r.clientName.includes('Александр')))
+
+  // Only use actual requests for the main feed
+  const combinedItems = requests.filter((r) => !myRequests.some((m) => m.id === r.id))
 
   let displayAuctionItems = combinedItems.filter((item) => {
     if (activeCategory && item.categoryL1Id && !item.id.includes('hero-')) {
@@ -343,14 +346,36 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
         onSortChange={setSortBy}
       />
 
+      {/* 2. PINNED MY ACTIVE REQUESTS SECTION (JTBD Focus Hub) */}
+      {myRequests.length > 0 && (
+        <div className="space-y-3 pt-1 animate-fadeIn">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#CCFF00] animate-ping" />
+              <h2 className="text-[15px] font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                <span>📌 МОИ АКТИВНЫЕ ЗАПРОСЫ</span>
+                <span className="px-2 py-0.5 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] text-xs border border-[#CCFF00]/40 font-mono">
+                  {myRequests.length}
+                </span>
+              </h2>
+            </div>
+            <span className="text-[11px] text-[#00F2FE] font-bold">Закреплено вверху</span>
+          </div>
 
+          <div className="flex flex-col gap-3">
+            {myRequests.map((item) => (
+              <MyPinnedRequestCard key={item.id} item={item} onOpenBidModal={onOpenBidModal} />
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* 3. LIVE FEED (Fragment.com Style Cards) */}
+      {/* 3. LIVE GENERAL FEED */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center gap-2 mb-1 px-1">
           <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-ping" />
           <h2 className="text-[15px] font-bold uppercase tracking-wider text-white">
-            🔥 АКТИВНЫЕ ЗАПРОСЫ
+            🔥 ВСЕ АУКЦИОНЫ В РАЙОНЕ
           </h2>
         </div>
 
@@ -367,6 +392,69 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function MyPinnedRequestCard({ item, onOpenBidModal }: { item: RequestItem; onOpenBidModal: (item: RequestItem) => void }) {
+  return (
+    <div
+      onClick={() => onOpenBidModal(item)}
+      className="w-full rounded-3xl p-4.5 bg-gradient-to-br from-[#0A101D] via-[#0F172A] to-[#0A101D] border-2 border-[#00F2FE]/70 shadow-[0_0_30px_rgba(0,242,254,0.25)] flex flex-col gap-3 relative overflow-hidden cursor-pointer animate-fadeIn group"
+    >
+      <div className="absolute top-0 right-0 w-32 h-32 bg-[#00F2FE]/15 rounded-full blur-[40px] pointer-events-none" />
+
+      {/* Header Badge */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CCFF00] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#CCFF00]"></span>
+          </span>
+          <span className="text-xs font-black text-[#CCFF00] uppercase tracking-wider">
+            МОЯ ЗАЯВКА В ЛЕНТЕ
+          </span>
+        </div>
+        <span className="text-[11px] font-bold text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+          📍 {item.district}
+        </span>
+      </div>
+
+      {/* Title & Description */}
+      <div>
+        <h3 className="text-[18px] font-black text-white leading-tight mb-1 group-hover:text-[#00F2FE] transition-colors">
+          {item.title}
+        </h3>
+        <p className="text-xs text-gray-300 leading-snug line-clamp-2">
+          {item.description}
+        </p>
+      </div>
+
+      {/* Live AI / Supplier Bids Tracker */}
+      <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#00F2FE]/20 flex items-center justify-center text-[#00F2FE]">
+            <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
+          </div>
+          <div>
+            <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
+              <span>⚡ ИИ нашел {item.bidsCount || 3} предложений</span>
+            </div>
+            <div className="text-[10px] text-cyan-300">Поставщики уведомлены в районе {item.district}</div>
+          </div>
+        </div>
+
+        <button 
+          onClick={(e) => {
+            e.stopPropagation()
+            triggerHapticFeedback('heavy')
+            onOpenBidModal(item)
+          }}
+          className="px-3.5 py-2 bg-gradient-to-r from-[#00F2FE] to-[#00C2FE] text-black font-black text-xs rounded-xl shadow-[0_0_15px_rgba(0,242,254,0.5)] hover:brightness-110 active:scale-95 transition-all"
+        >
+          Смотреть ({item.bidsCount || 3})
+        </button>
       </div>
     </div>
   )

@@ -314,7 +314,18 @@ export function App() {
     setActiveCategory(null)
   }
 
-  const handleCreateRequest = (newReq: Partial<RequestItem>) => {
+  const handleCreateRequest = (newReq: any) => {
+    let catId = newReq.categoryL1Id
+    const catName = newReq.categoryName || newReq.categoryL1Name || 'УСЛУГИ'
+    if (!catId) {
+      if (/ПРОКАТ|транспорт|байк|авто/i.test(catName)) catId = 'cat-transport'
+      else if (/ЖИЛЬЁ|вил|апарт|дом/i.test(catName)) catId = 'cat-realestate'
+      else if (/ДЕНЬГИ|обмен|валют/i.test(catName)) catId = 'cat-exchange'
+      else if (/ТОВАРЫ|маркет|куплю/i.test(catName)) catId = 'cat-market'
+      else if (/ДЕТИ|няня/i.test(catName)) catId = 'cat-kids'
+      else catId = 'cat-cleaning'
+    }
+
     const createdItem: RequestItem = {
       id: `req-${Date.now()}`,
       clientId: 'usr-current',
@@ -322,24 +333,26 @@ export function App() {
       clientAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       clientRating: 5.0,
       hub: (newReq.hub as any) || activeHub,
-      district: newReq.district || 'Jimbaran',
-      categoryL1Id: newReq.categoryL1Id || 'cat-realestate',
-      categoryL1Name: newReq.categoryL1Name || 'Жильё',
+      district: newReq.district || 'Равай',
+      categoryL1Id: catId,
+      categoryL1Name: catName,
       title: newReq.title || 'Запрос на услугу',
       description: newReq.description || '',
-      budget: newReq.budget ?? 345,
+      budget: typeof newReq.budget === 'number' ? newReq.budget : 0,
       currency: 'USD',
-      mediaUrls: [],
-      isFeatured: false,
+      mediaUrls: newReq.mediaUrls || [],
+      isFeatured: true,
       status: 'open',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-      auctionEndsAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-      bidsCount: 0,
+      auctionEndsAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      bidsCount: 3,
     }
 
-    setRequests([createdItem, ...requests])
-    setNotificationMsg('🎉 Заявка опубликована на живой аукцион!')
+    setRequests((prev) => [createdItem, ...prev])
+    setActiveCategory(null)
+    setActiveTab('home')
+    setNotificationMsg('⚡ Заявка создана и закреплена вверху вашей ленты!')
     setTimeout(() => setNotificationMsg(null), 4000)
   }
 
