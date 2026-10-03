@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw } from 'lucide-react'
+import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw, Volume2, Radio } from 'lucide-react'
 import { analyzeRequestFlowWithAI, parseDeterministicRequest, ParsedRequest } from '../lib/gemini'
 import { triggerHapticFeedback, triggerNotificationFeedback, sendSuperadminErrorAlert } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
@@ -33,6 +33,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isRecording, setIsRecording] = useState(false)
+  const [liveTranscript, setLiveTranscript] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [finalCard, setFinalCard] = useState<ParsedRequest | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -42,25 +43,45 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setMessages([{ role: 'model', text: 'Привет! Что вам нужно? Напишите или скажите голосом.' }])
+      setMessages([{ role: 'model', text: 'Привет! Что вам нужно? Напишите текстом или надиктуйте голосом.' }])
       setFinalCard(null)
       setAiError(null)
       setInputText('')
+      setLiveTranscript('')
 
-      // Init Speech Recognition
+      // Init Speech Recognition with interimResults for live audio transcript
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
       if (SpeechRecognition) {
         if (!recognitionRef.current) {
-          recognitionRef.current = new SpeechRecognition()
-          recognitionRef.current.continuous = false
-          recognitionRef.current.lang = 'ru-RU'
+          try {
+            const recog = new SpeechRecognition()
+            recog.continuous = true
+            recog.interimResults = true
+            recog.lang = 'ru-RU'
 
-          recognitionRef.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript
-            handleUserSubmit(transcript)
+            recog.onresult = (event: any) => {
+              let currentText = ''
+              for (let i = event.resultIndex; i < event.results.length; ++i) {
+                currentText += event.results[i][0].transcript
+              }
+              if (currentText) {
+                setLiveTranscript(currentText)
+                setInputText(currentText)
+              }
+            }
+
+            recog.onend = () => {
+              setIsRecording(false)
+            }
+            recog.onerror = (err: any) => {
+              console.warn('Speech Recognition error:', err)
+              setIsRecording(false)
+            }
+
+            recognitionRef.current = recog
+          } catch (e) {
+            console.warn('SpeechRecognition initialization error:', e)
           }
-          recognitionRef.current.onend = () => setIsRecording(false)
-          recognitionRef.current.onerror = () => setIsRecording(false)
         }
       }
 
@@ -85,28 +106,40 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         } catch (e) {}
       }
       setIsRecording(false)
+      setLiveTranscript('')
     }
   }, [isOpen, initialPrompt, startVoice])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isAnalyzing, finalCard, aiError])
+  }, [messages, isAnalyzing, finalCard, aiError, liveTranscript])
 
   const toggleRecording = () => {
-    triggerHapticFeedback('light')
+    triggerHapticFeedback('heavy')
     if (isRecording) {
-      recognitionRef.current?.stop()
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch (e) {}
+      }
       setIsRecording(false)
+      if (inputText.trim()) {
+        handleUserSubmit(inputText)
+      }
     } else {
       if (recognitionRef.current) {
         try {
+          setInputText('')
+          setLiveTranscript('')
           recognitionRef.current.start()
           setIsRecording(true)
+          triggerNotificationFeedback('success')
         } catch (e) {
           setIsRecording(false)
+          alert('Не удалось запустить микрофон. Попробуйте ввести текст вручную.')
         }
       } else {
-        alert('Голосовой ввод не поддерживается в вашем браузере')
+        alert('Голосовой ввод не поддерживается в вашем браузере. Вы можете написать текст в чат!')
       }
     }
   }
@@ -116,6 +149,12 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     triggerHapticFeedback('light')
     setAiError(null)
     setIsAnalyzing(true)
+    setIsRecording(false)
+    setLiveTranscript('')
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch (e) {}
+    }
 
     const updatedHistory: Message[] = [...messages, { role: 'user', text }]
     setMessages(updatedHistory)
@@ -130,7 +169,6 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         setFinalCard(response.requestParams)
         setMessages(prev => [...prev, { role: 'model', text: '✅ Карточка заявки сформирована! Ознакомьтесь и нажмите "Опубликовать заявку".' }])
       } else {
-        // Fallback to deterministic parser
         const fallbackRes = parseDeterministicRequest(updatedHistory, currentHub, currentDistrict)
         if (fallbackRes.requestParams) {
           setFinalCard(fallbackRes.requestParams)
@@ -142,10 +180,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       const errorDetails = err?.message || 'Неизвестная ошибка ИИ API'
       setAiError(errorDetails)
 
-      // Send error alert to Superadmin
       sendSuperadminErrorAlert(errorDetails, err?.stack, 'AIAssistantModal executeUserSubmit')
 
-      // Also generate immediate fallback card so user is never blocked
       const fallbackRes = parseDeterministicRequest(updatedHistory, currentHub, currentDistrict)
       if (fallbackRes.requestParams) {
         setFinalCard(fallbackRes.requestParams)
@@ -173,7 +209,20 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#050811]/90 backdrop-blur-xl animate-fadeIn">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#050811]/95 backdrop-blur-2xl animate-fadeIn font-sans">
+      {/* Dynamic Soundwave Animations CSS inline */}
+      <style>{`
+        @keyframes soundwave-bar {
+          0%, 100% { height: 8px; opacity: 0.5; }
+          50% { height: 28px; opacity: 1; }
+        }
+        .animate-soundwave-1 { animation: soundwave-bar 0.6s infinite ease-in-out 0.1s; }
+        .animate-soundwave-2 { animation: soundwave-bar 0.6s infinite ease-in-out 0.25s; }
+        .animate-soundwave-3 { animation: soundwave-bar 0.6s infinite ease-in-out 0.4s; }
+        .animate-soundwave-4 { animation: soundwave-bar 0.6s infinite ease-in-out 0.15s; }
+        .animate-soundwave-5 { animation: soundwave-bar 0.6s infinite ease-in-out 0.3s; }
+      `}</style>
+
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12 safe-area-top border-b border-white/10 bg-[#0A101D]">
         <div className="flex items-center gap-3">
@@ -182,7 +231,10 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           </div>
           <div>
             <h2 className="text-[18px] font-bold text-white leading-tight">{t(lang, 'ai_assistant_title')}</h2>
-            <p className="text-[13px] text-cyan-400">{t(lang, 'ai_assistant_sub')}</p>
+            <p className="text-[13px] text-cyan-400 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-cyan-400" />
+              <span>Голосовой ИИ-ассистент TuttoMinutto</span>
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -195,7 +247,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
               }}
               className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-xs text-cyan-300 font-extrabold flex items-center gap-1 transition-all cursor-pointer shadow-[0_0_10px_rgba(0,242,254,0.2)]"
             >
-              <span>Skip ➔</span>
+              <span>Вручную ➔</span>
             </button>
           )}
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white">
@@ -210,7 +262,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           <div key={idx} className={`flex max-w-[85%] ${msg.role === 'user' ? 'self-end' : 'self-start'}`}>
             <div className={`p-3.5 rounded-2xl text-[15px] leading-snug ${
               msg.role === 'user'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-sm'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-sm shadow-[0_0_15px_rgba(0,242,254,0.2)]'
                 : 'bg-white/10 text-gray-200 rounded-tl-sm border border-white/5'
             }`}>
               {msg.text}
@@ -218,11 +270,62 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           </div>
         ))}
 
+        {/* Live Audio Visualizer Banner (When Recording) */}
+        {isRecording && (
+          <div className="p-4 rounded-3xl bg-gradient-to-r from-rose-500/20 via-purple-500/20 to-cyan-500/20 border border-rose-500/40 shadow-[0_0_30px_rgba(244,63,94,0.3)] animate-fadeIn space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                </span>
+                <span className="font-extrabold text-xs text-rose-300 uppercase tracking-wider">Голосовой ввод активен — Запись идет...</span>
+              </div>
+              <div className="flex items-center gap-1.5 h-8">
+                <div className="w-1 bg-[#00F2FE] rounded-full animate-soundwave-1"></div>
+                <div className="w-1 bg-purple-400 rounded-full animate-soundwave-2"></div>
+                <div className="w-1 bg-rose-500 rounded-full animate-soundwave-3"></div>
+                <div className="w-1 bg-[#00F2FE] rounded-full animate-soundwave-4"></div>
+                <div className="w-1 bg-amber-400 rounded-full animate-soundwave-5"></div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-black/60 rounded-2xl border border-white/10 text-white font-medium text-sm min-h-[48px] flex items-center italic">
+              {liveTranscript ? (
+                <span>«{liveTranscript}»</span>
+              ) : (
+                <span className="text-gray-400 not-italic flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-rose-400 animate-pulse" />
+                  Говорите ваш запрос (например: "Нужен байк на 7 дней на Раваи")...
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                if (inputText.trim()) {
+                  handleUserSubmit(inputText)
+                } else {
+                  setIsRecording(false)
+                }
+              }}
+              className="w-full py-2.5 bg-rose-500 text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.4)] hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" />
+              <span>Завершить запись и отправить</span>
+            </button>
+          </div>
+        )}
+
+        {/* AI Analyzing Indicator */}
         {isAnalyzing && (
           <div className="flex self-start max-w-[80%]">
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 rounded-tl-sm flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-              <span className="text-[14px] text-gray-400">Нейросеть анализирует запрос...</span>
+            <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center gap-3 shadow-[0_0_20px_rgba(0,242,254,0.2)]">
+              <Loader2 className="w-5 h-5 text-[#00F2FE] animate-spin" />
+              <div className="text-xs">
+                <div className="font-bold text-white">Нейросеть обрабатывает запрос...</div>
+                <div className="text-[10px] text-cyan-400 mt-0.5">Формирование карточки с четким интентом</div>
+              </div>
             </div>
           </div>
         )}
@@ -310,7 +413,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
               ) : (
                 <button 
                   onClick={toggleRecording} 
-                  className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center mr-1 transition-all ${isRecording ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                  className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center mr-1 transition-all ${isRecording ? 'bg-rose-500 text-white animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.6)]' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                  title="Включить голосовой ввод"
                 >
                   {isRecording ? <Square className="w-4 h-4 fill-current" /> : <Mic className="w-5 h-5" />}
                 </button>
