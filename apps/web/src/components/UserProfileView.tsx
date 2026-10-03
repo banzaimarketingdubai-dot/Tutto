@@ -57,16 +57,18 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const activeEmail = supabaseEmail || (localStorage.getItem('tutto_email_linked') === 'true' ? (localStorage.getItem('tutto_user_email') || 'user@gmail.com') : null)
   const isEmailLinked = Boolean(activeEmail)
 
-  // Profile Name & Avatar state with persistence
-  const defaultInitialName = telegramUser?.first_name
-    ? `${telegramUser.first_name}${telegramUser.last_name ? ' ' + telegramUser.last_name : ''}`
-    : supabaseEmail
-    ? (session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || supabaseEmail.split('@')[0])
-    : bizCard.companyName || 'Александр Иванов'
+  // Determine synced initial name and avatar
+  const googleName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name
+  const googleAvatar = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture
+
+  const defaultInitialName =
+    googleName ||
+    (telegramUser?.first_name ? `${telegramUser.first_name}${telegramUser.last_name ? ' ' + telegramUser.last_name : ''}` : null) ||
+    (supabaseEmail ? supabaseEmail.split('@')[0] : 'Александр Иванов')
 
   const defaultInitialAvatar =
+    googleAvatar ||
     telegramUser?.photo_url ||
-    (session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture) ||
     bizCard.logoUrl ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'
 
@@ -77,19 +79,20 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     () => localStorage.getItem('tutto_profile_avatar') || defaultInitialAvatar
   )
 
-  // Sync profile name/avatar when session updates (e.g. after Google OAuth redirect)
+  // Sync profile when Google OAuth session logs in or updates
   useEffect(() => {
     if (session?.user) {
-      const googleName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name
-      const googleAvatar = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture
-      if (googleName && !localStorage.getItem('tutto_profile_name')) {
+      if (googleName) {
         setProfileName(googleName)
+        localStorage.setItem('tutto_profile_name', googleName)
       }
-      if (googleAvatar && !localStorage.getItem('tutto_profile_avatar')) {
+      if (googleAvatar) {
         setProfileAvatar(googleAvatar)
+        localStorage.setItem('tutto_profile_avatar', googleAvatar)
       }
+      window.dispatchEvent(new Event('tutto-profile-updated'))
     }
-  }, [session])
+  }, [session, googleName, googleAvatar])
 
   // Profile Edit Modal State
   const [isEditingProfile, setIsEditingProfile] = useState(false)
@@ -124,6 +127,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     setProfileAvatar(tempAvatar)
     localStorage.setItem('tutto_profile_name', trimmed)
     localStorage.setItem('tutto_profile_avatar', tempAvatar)
+    window.dispatchEvent(new Event('tutto-profile-updated'))
     setIsEditingProfile(false)
     triggerNotificationFeedback('success')
     triggerHapticFeedback('heavy')
@@ -135,6 +139,9 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
       await supabase.auth.signOut()
       localStorage.removeItem('tutto_email_linked')
       localStorage.removeItem('tutto_user_email')
+      localStorage.removeItem('tutto_profile_name')
+      localStorage.removeItem('tutto_profile_avatar')
+      window.dispatchEvent(new Event('tutto-profile-updated'))
       triggerNotificationFeedback('success')
     } catch (err) {
       console.error('Error signing out', err)
@@ -143,10 +150,9 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
 
   const handleConnectTelegram = () => {
     triggerHapticFeedback('light')
-    // Open Telegram Bot for authentication
     window.open('https://t.me/tuttominutto_bot?start=auth', '_blank')
-    // Set optimistic fallback state
     localStorage.setItem('tutto_tg_linked', 'true')
+    window.dispatchEvent(new Event('tutto-profile-updated'))
   }
 
   if (activeSection === 'business') {
@@ -161,7 +167,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     return <FinanceView onBack={() => setActiveSection('hub')} />
   }
 
-  // Calculate Verification Level
   const verifiedCount = (isTelegramLinked ? 1 : 0) + (isEmailLinked ? 1 : 0)
   const trustPercentage = verifiedCount * 50
 
