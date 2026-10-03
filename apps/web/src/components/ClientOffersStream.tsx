@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
-import { Sparkles, Check, MessageSquare, X, ArrowUpDown, ShieldCheck, Star, Clock, Eye, Scale, DollarSign } from 'lucide-react'
+import { Sparkles, Check, MessageSquare, X, ArrowUpDown, ShieldCheck, Star, Clock, Eye } from 'lucide-react'
 import { BidItem, RequestItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { OfferPreviewModal } from './OfferPreviewModal'
-import { CompareOffersModal } from './CompareOffersModal'
-import { CounterOfferModal } from './CounterOfferModal'
 
 interface ClientOffersStreamProps {
   request: RequestItem
@@ -24,9 +22,6 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
   const [sortBy, setSortBy] = useState<'price_asc' | 'newest' | 'rating'>('price_asc')
   const [rejectedIds, setRejectedIds] = useState<string[]>([])
   const [previewOffer, setPreviewOffer] = useState<BidItem | null>(null)
-  const [isCompareOpen, setIsCompareOpen] = useState(false)
-  const [bargainOffer, setBargainOffer] = useState<BidItem | null>(null)
-  const [counterToastMsg, setCounterToastMsg] = useState<string | null>(null)
 
   const activeBids = bids.filter(b => !rejectedIds.includes(b.id))
 
@@ -65,13 +60,6 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
 
   return (
     <div className="w-full space-y-3.5 mt-2 animate-fadeIn relative">
-      {/* Toast notification for counter offer */}
-      {counterToastMsg && (
-        <div className="p-3 bg-[#00F2FE] text-black font-black text-xs rounded-xl shadow-[0_0_20px_rgba(0,242,254,0.6)] animate-bounce text-center">
-          {counterToastMsg}
-        </div>
-      )}
-
       {/* Header & InDrive Style Sorting Pills */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-1 border-b border-white/10 pb-2.5">
         <div className="flex items-center gap-2">
@@ -84,62 +72,47 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
           </span>
         </div>
 
-        {/* Sorting Pills + Compare Button */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {sortedBids.length >= 2 && (
-            <button
-              onClick={() => {
-                triggerHapticFeedback('heavy')
-                setIsCompareOpen(true)
-              }}
-              className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-black text-[11px] shadow-[0_0_12px_rgba(245,158,11,0.4)] hover:brightness-110 transition-all flex items-center gap-1 cursor-pointer mr-1"
-            >
-              <Scale className="w-3.5 h-3.5 text-black" />
-              <span>Сравнить 2 лучших</span>
-            </button>
-          )}
-
-          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 text-[11px] font-bold">
-            <button
-              onClick={() => {
-                triggerHapticFeedback('light')
-                setSortBy('price_asc')
-              }}
-              className={`px-2 py-1 rounded-lg transition-all ${
-                sortBy === 'price_asc'
-                  ? 'bg-[#00F2FE] text-black font-extrabold shadow-[0_0_10px_rgba(0,242,254,0.4)]'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              💸 Дешевле
-            </button>
-            <button
-              onClick={() => {
-                triggerHapticFeedback('light')
-                setSortBy('newest')
-              }}
-              className={`px-2 py-1 rounded-lg transition-all ${
-                sortBy === 'newest'
-                  ? 'bg-[#00F2FE] text-black font-extrabold shadow-[0_0_10px_rgba(0,242,254,0.4)]'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              ⏱️ Свежие
-            </button>
-            <button
-              onClick={() => {
-                triggerHapticFeedback('light')
-                setSortBy('rating')
-              }}
-              className={`px-2 py-1 rounded-lg transition-all ${
-                sortBy === 'rating'
-                  ? 'bg-[#00F2FE] text-black font-extrabold shadow-[0_0_10px_rgba(0,242,254,0.4)]'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              ⭐ Рейтинг
-            </button>
-          </div>
+        {/* Sorting Pills */}
+        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 text-[11px] font-bold">
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setSortBy('price_asc')
+            }}
+            className={`px-2.5 py-1 rounded-lg transition-all ${
+              sortBy === 'price_asc'
+                ? 'bg-[#00F2FE] text-black font-extrabold shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            💸 Дешевле
+          </button>
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setSortBy('newest')
+            }}
+            className={`px-2.5 py-1 rounded-lg transition-all ${
+              sortBy === 'newest'
+                ? 'bg-[#00F2FE] text-black font-extrabold shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            ⏱️ Свежие
+          </button>
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setSortBy('rating')
+            }}
+            className={`px-2.5 py-1 rounded-lg transition-all ${
+              sortBy === 'rating'
+                ? 'bg-[#00F2FE] text-black font-extrabold shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            ⭐ Рейтинг
+          </button>
         </div>
       </div>
 
@@ -271,7 +244,7 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
                 </div>
 
                 {/* Bottom Action Controls (inDrive Style) */}
-                <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
                   <button
                     onClick={() => handleReject(bid.id)}
                     className="p-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-300 border border-white/10 hover:border-rose-500/40 transition-all cursor-pointer"
@@ -285,21 +258,10 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
                       triggerHapticFeedback('light')
                       setPreviewOffer(bid)
                     }}
-                    className="px-2.5 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/40 transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                    className="px-3 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Карточка</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      triggerHapticFeedback('light')
-                      setBargainOffer(bid)
-                    }}
-                    className="px-2.5 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <DollarSign className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Торг</span>
                   </button>
 
                   {onClarifyOffer && (
@@ -308,10 +270,10 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
                         triggerHapticFeedback('light')
                         onClarifyOffer(bid)
                       }}
-                      className="px-2.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 font-bold text-xs border border-white/10 transition-all flex items-center gap-1 cursor-pointer"
+                      className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 font-bold text-xs border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Чат</span>
+                      <span>Чат / Торг</span>
                     </button>
                   )}
 
@@ -321,7 +283,7 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
                       triggerNotificationFeedback('success')
                       onAcceptOffer(bid)
                     }}
-                    className="flex-1 py-2.5 px-3 bg-gradient-to-r from-[#00F2FE] via-[#00DFEA] to-[#CCFF00] text-black font-black text-xs rounded-xl shadow-[0_0_20px_rgba(0,242,254,0.5)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    className="flex-1 py-2.5 px-3 bg-gradient-to-r from-[#00F2FE] via-[#00DFEA] to-[#CCFF00] text-black font-black text-xs rounded-xl shadow-[0_0_20px_rgba(0,242,254,0.5)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Check className="w-4 h-4 text-black stroke-[3]" />
                     <span>Принять ${bid.proposedPrice}</span>
@@ -356,32 +318,6 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
               }
             : undefined
         }
-      />
-
-      {/* Side-by-Side Comparison Modal for Top 2 Offers */}
-      <CompareOffersModal
-        isOpen={isCompareOpen}
-        offerA={sortedBids[0] || null}
-        offerB={sortedBids[1] || null}
-        request={request}
-        onClose={() => setIsCompareOpen(false)}
-        onAcceptOffer={(bid) => {
-          onAcceptOffer(bid)
-          setIsCompareOpen(false)
-        }}
-      />
-
-      {/* Counter-Offer Bargain Modal */}
-      <CounterOfferModal
-        isOpen={!!bargainOffer}
-        offer={bargainOffer}
-        request={request}
-        onClose={() => setBargainOffer(null)}
-        onSubmitCounter={(off, counterPrice) => {
-          setBargainOffer(null)
-          setCounterToastMsg(`💸 Встречное предложение $${counterPrice} отправлено ${off.providerName}!`)
-          setTimeout(() => setCounterToastMsg(null), 4000)
-        }}
       />
     </div>
   )
