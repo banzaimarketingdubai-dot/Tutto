@@ -20,15 +20,41 @@ interface CustomCategoryWizardState {
 const adminWizards: Record<number, CustomCategoryWizardState> = {}
 
 // ==========================================
-// 1. ONBOARDING & JTBD FLOWS
+// 1. ONBOARDING, AUTH & ACCOUNT LINKING FLOWS
 // ==========================================
 
 bot.command('start', async (ctx: Context) => {
   const startParam = ctx.match
   const userName = ctx.from?.first_name || 'Пользователь'
+  const telegramId = ctx.from?.id
+  const username = ctx.from?.username || ''
 
-  // Handling direct deep links via ref_ or specific start strings
+  // Handling Account Linking Deep Link (from Web App)
   if (startParam && typeof startParam === 'string') {
+    if (startParam.startsWith('link_') || startParam.startsWith('bind_') || startParam.startsWith('auth_')) {
+      const emailOrId = decodeURIComponent(startParam.replace(/^(link_|bind_|auth_)/, ''))
+      
+      const linkSuccessText = 
+        `🎉 <b>Аккаунты успешно объединены в единый профиль TuttoMinutto!</b>\n\n` +
+        `👤 <b>Telegram:</b> ${userName} (@${username || 'нет_юзернейма'}, ID: <code>${telegramId}</code>)\n` +
+        `📧 <b>Email / Google:</b> <code>${emailOrId}</code>\n\n` +
+        `Ваш аккаунт верифицирован на 100%. Все ваши заказы, отклики и баланс токенов объединены.\n` +
+        `Нажмите кнопку ниже, чтобы вернуться в веб-приложение:`
+
+      const returnDeepLink = `${appUrl}?startapp=linked_${encodeURIComponent(emailOrId)}&tg_id=${telegramId}&tg_username=${username}&tg_name=${encodeURIComponent(userName)}`
+      
+      const keyboard = new InlineKeyboard()
+        .webApp('🚀 Открыть TuttoMinutto App', returnDeepLink)
+        .row()
+        .url('🌐 Вернуться в веб-версию', returnDeepLink)
+
+      await ctx.reply(linkSuccessText, {
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      })
+      return
+    }
+
     if (startParam.startsWith('ref_')) {
       const partnerId = startParam.split('_')[1]
       await ctx.reply(`🎉 *Вы приглашены партнёром (ID: ${partnerId})!*\nВам начислен приветственный бонус.`, { parse_mode: 'Markdown' })

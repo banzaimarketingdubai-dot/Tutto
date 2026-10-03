@@ -215,6 +215,22 @@ export function App() {
     }
 
     const startAppParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam') || (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param
+    
+    if (startAppParam && startAppParam.startsWith('linked_')) {
+      const tgId = urlParams.get('tg_id')
+      const tgUsername = urlParams.get('tg_username')
+      const tgName = urlParams.get('tg_name')
+      
+      localStorage.setItem('tutto_tg_linked', 'true')
+      if (tgId) localStorage.setItem('tutto_tg_id', tgId)
+      if (tgUsername) localStorage.setItem('tutto_tg_username', tgUsername)
+      if (tgName) localStorage.setItem('tutto_tg_name', decodeURIComponent(tgName))
+      
+      window.dispatchEvent(new Event('tutto-profile-updated'))
+      setNotificationMsg('🎉 Telegram и Email успешно объединены в единый профиль!')
+      setTimeout(() => setNotificationMsg(null), 4000)
+    }
+
     const parsedLink = parseDeepLinkParam(startAppParam)
     if (parsedLink) {
       if (parsedLink.type === 'request') {
@@ -228,7 +244,6 @@ export function App() {
       setIsCreateOpen(true)
     } else if (startAppParam === 'setup_business') {
       setActiveTab('account')
-      // Note: Setting initial state for business tab could be done here if needed.
     }
 
     // Onboarding tutorial auto-display on first visit

@@ -53,7 +53,10 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const [tokenBalance] = useTokenBalance()
 
   // Real Auth Linkage Detection
-  const isTelegramLinked = Boolean(telegramUser?.id || isTMA || localStorage.getItem('tutto_tg_linked') === 'true')
+  const savedTgUsername = localStorage.getItem('tutto_tg_username')
+  const savedTgName = localStorage.getItem('tutto_tg_name')
+
+  const isTelegramLinked = Boolean(telegramUser?.id || isTMA || savedTgUsername || localStorage.getItem('tutto_tg_linked') === 'true')
   const activeEmail = supabaseEmail || (localStorage.getItem('tutto_email_linked') === 'true' ? (localStorage.getItem('tutto_user_email') || 'user@gmail.com') : null)
   const isEmailLinked = Boolean(activeEmail)
 
@@ -64,6 +67,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const defaultInitialName =
     googleName ||
     (telegramUser?.first_name ? `${telegramUser.first_name}${telegramUser.last_name ? ' ' + telegramUser.last_name : ''}` : null) ||
+    savedTgName ||
     (supabaseEmail ? supabaseEmail.split('@')[0] : 'Александр Иванов')
 
   const defaultInitialAvatar =
@@ -150,9 +154,12 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
 
   const handleConnectTelegram = () => {
     triggerHapticFeedback('light')
-    window.open('https://t.me/tuttominutto_bot?start=auth', '_blank')
+    const userEmailOrId = supabaseEmail || localStorage.getItem('tutto_user_email') || 'web_user'
+    const botLink = `https://t.me/tuttominutto_bot?start=link_${encodeURIComponent(userEmailOrId)}`
+    window.open(botLink, '_blank')
     localStorage.setItem('tutto_tg_linked', 'true')
     window.dispatchEvent(new Event('tutto-profile-updated'))
+    triggerNotificationFeedback('success')
   }
 
   if (activeSection === 'business') {
@@ -169,6 +176,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
 
   const verifiedCount = (isTelegramLinked ? 1 : 0) + (isEmailLinked ? 1 : 0)
   const trustPercentage = verifiedCount * 50
+
+  const displayTelegramHandle =
+    savedTgUsername
+      ? `@${savedTgUsername}`
+      : telegramUser?.username
+      ? `@${telegramUser.username}`
+      : telegramUser?.first_name
+      ? `${telegramUser.first_name} ${telegramUser.last_name || ''}`
+      : savedTgName || (isTMA ? 'Telegram WebApp Authed' : 'Не привязан к профилю')
 
   return (
     <div className="space-y-5 pb-20 animate-fadeIn text-xs relative">
@@ -222,7 +238,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
         {/* Real Account Bindings / Verification Cards */}
         <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2.5">
           <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-            <span>Статус авторизации и верификации</span>
+            <span>Единая авторизация (Объединенный аккаунт)</span>
             <span className="text-cyan-400 font-mono font-bold">{trustPercentage}%</span>
           </div>
 
@@ -236,19 +252,13 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
                 <div className="flex items-center gap-1.5">
                   <span className="font-bold text-xs text-white">Telegram Аккаунт</span>
                   {isTelegramLinked ? (
-                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-black border border-emerald-500/40">🟢 ПРИВЯЗАН</span>
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-black border border-emerald-500/40">🟢 ОБЪЕДИНЕН</span>
                   ) : (
                     <span className="text-[9px] bg-white/10 text-gray-400 px-1.5 py-0.2 rounded font-bold">НЕ ПРИВЯЗАН</span>
                   )}
                 </div>
                 <p className="text-[10px] text-gray-400 mt-0.5">
-                  {telegramUser?.username
-                    ? `@${telegramUser.username}`
-                    : telegramUser?.first_name
-                    ? `${telegramUser.first_name} ${telegramUser.last_name || ''}`
-                    : isTMA
-                    ? 'Telegram WebApp Authed'
-                    : 'Не привязан к профилю'}
+                  {displayTelegramHandle}
                 </p>
               </div>
             </div>
@@ -267,8 +277,9 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
               <button
                 onClick={handleConnectTelegram}
                 className="px-3 py-1.5 rounded-xl bg-[#0088cc] text-white font-bold text-[10px] hover:brightness-110 shadow-[0_0_10px_rgba(0,136,204,0.4)] transition-all flex items-center gap-1 cursor-pointer"
+                title="Авторизовать бот и объединить с почтой"
               >
-                <span>Привязать</span>
+                <span>Привязать Бот</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             )}
@@ -284,7 +295,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
                 <div className="flex items-center gap-1.5">
                   <span className="font-bold text-xs text-white">Google / Gmail</span>
                   {isEmailLinked ? (
-                    <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-black border border-purple-500/40">🟢 ПРИВЯЗАН</span>
+                    <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-black border border-purple-500/40">🟢 ОБЪЕДИНЕН</span>
                   ) : (
                     <span className="text-[9px] bg-white/10 text-gray-400 px-1.5 py-0.2 rounded font-bold">НЕ ПРИВЯЗАН</span>
                   )}
@@ -322,17 +333,17 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
           {verifiedCount === 2 ? (
             <div className="flex items-center gap-2 text-[10px] text-emerald-400 bg-emerald-400/10 p-2.5 rounded-xl border border-emerald-400/20 font-bold">
               <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Все аккаунты верифицированы (Максимальный траст 100%) ✓</span>
+              <span>Единый профиль создан: Telegram и Gmail успешно объединены! ✓</span>
             </div>
           ) : verifiedCount === 1 ? (
             <div className="flex items-center gap-2 text-[10px] text-cyan-400 bg-cyan-400/10 p-2.5 rounded-xl border border-cyan-400/20 font-bold">
               <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span>Частичная верификация (Траст 50%). Нажмите "Войти / Google" выше для 100% защиты.</span>
+              <span>Частичная связь (50%). Нажмите "{!isTelegramLinked ? 'Привязать Бот' : 'Войти / Google'}" выше для 100% объединения.</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-[10px] text-amber-400 bg-amber-400/10 p-2.5 rounded-xl border border-amber-400/20 font-bold">
               <Shield className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Аккаунты не верифицированы. Авторизуйтесь в Telegram или Google выше.</span>
+              <span>Аккаунты не объединены. Воспользуйтесь кнопками авторизации выше.</span>
             </div>
           )}
         </div>
