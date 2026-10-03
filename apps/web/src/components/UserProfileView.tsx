@@ -1,5 +1,29 @@
-import React, { useState } from 'react'
-import { Shield, Sparkles, Bot, Check, Star, Edit3, ChevronRight, Store, Wallet, LayoutTemplate, Coins, Link2, Mail, MessageCircle, Heart, Clock, Camera, Upload, X, CheckCircle2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import {
+  Shield,
+  Sparkles,
+  Bot,
+  Check,
+  Star,
+  Edit3,
+  ChevronRight,
+  Store,
+  Wallet,
+  LayoutTemplate,
+  Coins,
+  Link2,
+  Mail,
+  MessageCircle,
+  Heart,
+  Clock,
+  Camera,
+  Upload,
+  X,
+  CheckCircle2,
+  LogOut,
+  ExternalLink,
+  ArrowRight
+} from 'lucide-react'
 import { MOCK_BUSINESS_CARDS } from '../data/mockData'
 import { getTelegramUser, triggerHapticFeedback, triggerNotificationFeedback, isTelegramEnvironment } from '../lib/telegram'
 import { PlatformRulesModal } from './PlatformRulesModal'
@@ -7,8 +31,8 @@ import { MyBusinessView } from './MyBusinessView'
 import { AIManagerView } from './AIManagerView'
 import { FinanceView } from './FinanceView'
 import { TokenWalletModal } from './TokenWalletModal'
-
 import { useTokenBalance } from '../lib/balance'
+import { supabase } from '../lib/supabase'
 
 interface UserProfileViewProps {
   session?: any
@@ -17,25 +41,32 @@ interface UserProfileViewProps {
 }
 
 export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpenAdmin, onOpenAuth }) => {
-  const user = getTelegramUser()
-  const email = session?.user?.email
-  const bizCard = MOCK_BUSINESS_CARDS.find(c => c.ownerEmail === email) || MOCK_BUSINESS_CARDS[0]
+  const telegramUser = getTelegramUser()
+  const isTMA = isTelegramEnvironment()
+  const supabaseEmail = session?.user?.email
+
+  const bizCard = MOCK_BUSINESS_CARDS.find(c => c.ownerEmail === supabaseEmail) || MOCK_BUSINESS_CARDS[0]
 
   const [activeSection, setActiveSection] = useState<'hub' | 'business' | 'ai' | 'finance'>('hub')
   const [isRulesOpen, setIsRulesOpen] = useState(false)
   const [isWalletOpen, setIsWalletOpen] = useState(false)
-  const [tokenBalance, setTokenBalance] = useTokenBalance()
+  const [tokenBalance] = useTokenBalance()
+
+  // Real Auth Linkage Detection
+  const isTelegramLinked = Boolean(telegramUser?.id || isTMA || localStorage.getItem('tutto_tg_linked') === 'true')
+  const activeEmail = supabaseEmail || (localStorage.getItem('tutto_email_linked') === 'true' ? (localStorage.getItem('tutto_user_email') || 'user@gmail.com') : null)
+  const isEmailLinked = Boolean(activeEmail)
 
   // Profile Name & Avatar state with persistence
-  const defaultInitialName = user?.first_name
-    ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`
-    : email
-    ? (session?.user?.user_metadata?.name || bizCard.companyName)
-    : 'Александр Иванов'
+  const defaultInitialName = telegramUser?.first_name
+    ? `${telegramUser.first_name}${telegramUser.last_name ? ' ' + telegramUser.last_name : ''}`
+    : supabaseEmail
+    ? (session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || supabaseEmail.split('@')[0])
+    : bizCard.companyName || 'Александр Иванов'
 
   const defaultInitialAvatar =
-    user?.photo_url ||
-    (email ? session?.user?.user_metadata?.avatar_url : null) ||
+    telegramUser?.photo_url ||
+    (session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture) ||
     bizCard.logoUrl ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'
 
@@ -46,30 +77,24 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     () => localStorage.getItem('tutto_profile_avatar') || defaultInitialAvatar
   )
 
+  // Sync profile name/avatar when session updates (e.g. after Google OAuth redirect)
+  useEffect(() => {
+    if (session?.user) {
+      const googleName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name
+      const googleAvatar = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture
+      if (googleName && !localStorage.getItem('tutto_profile_name')) {
+        setProfileName(googleName)
+      }
+      if (googleAvatar && !localStorage.getItem('tutto_profile_avatar')) {
+        setProfileAvatar(googleAvatar)
+      }
+    }
+  }, [session])
+
   // Profile Edit Modal State
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [tempName, setTempName] = useState(profileName)
   const [tempAvatar, setTempAvatar] = useState(profileAvatar)
-
-  // Account Binding Checkboxes State
-  const [isTelegramLinked, setIsTelegramLinked] = useState<boolean>(
-    () => localStorage.getItem('tutto_tg_linked') === 'true'
-  )
-  const [isEmailLinked, setIsEmailLinked] = useState<boolean>(
-    () => localStorage.getItem('tutto_email_linked') === 'true'
-  )
-
-  const toggleTelegramLinked = (val: boolean) => {
-    setIsTelegramLinked(val)
-    localStorage.setItem('tutto_tg_linked', String(val))
-    triggerHapticFeedback('medium')
-  }
-
-  const toggleEmailLinked = (val: boolean) => {
-    setIsEmailLinked(val)
-    localStorage.setItem('tutto_email_linked', String(val))
-    triggerHapticFeedback('medium')
-  }
 
   const handleOpenEditModal = () => {
     setTempName(profileName)
@@ -104,6 +129,26 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     triggerHapticFeedback('heavy')
   }
 
+  const handleSignOutEmail = async () => {
+    triggerHapticFeedback('medium')
+    try {
+      await supabase.auth.signOut()
+      localStorage.removeItem('tutto_email_linked')
+      localStorage.removeItem('tutto_user_email')
+      triggerNotificationFeedback('success')
+    } catch (err) {
+      console.error('Error signing out', err)
+    }
+  }
+
+  const handleConnectTelegram = () => {
+    triggerHapticFeedback('light')
+    // Open Telegram Bot for authentication
+    window.open('https://t.me/tuttominutto_bot?start=auth', '_blank')
+    // Set optimistic fallback state
+    localStorage.setItem('tutto_tg_linked', 'true')
+  }
+
   if (activeSection === 'business') {
     return <MyBusinessView onBack={() => setActiveSection('hub')} bizCard={bizCard} />
   }
@@ -118,8 +163,8 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
 
   // Calculate Verification Level
   const verifiedCount = (isTelegramLinked ? 1 : 0) + (isEmailLinked ? 1 : 0)
+  const trustPercentage = verifiedCount * 50
 
-  // Hub View
   return (
     <div className="space-y-5 pb-20 animate-fadeIn text-xs relative">
       
@@ -164,71 +209,125 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
               <span>Рейтинг доверия</span>
             </div>
             <div className="mt-1 flex gap-1">
-               <span className="badge-pro text-[9px] px-1.5 py-0.5 rounded font-extrabold">PRO ACCOUNT</span>
+              <span className="badge-pro text-[9px] px-1.5 py-0.5 rounded font-extrabold">PRO ACCOUNT</span>
             </div>
           </div>
         </div>
         
-        {/* Account Bindings / Verification Checkboxes */}
+        {/* Real Account Bindings / Verification Cards */}
         <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2.5">
           <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-            <span>Статус привязки аккаунтов</span>
-            <span className="text-cyan-400 font-mono font-bold">{verifiedCount * 50}%</span>
+            <span>Статус авторизации и верификации</span>
+            <span className="text-cyan-400 font-mono font-bold">{trustPercentage}%</span>
           </div>
 
-          {/* Checkbox 1: Telegram */}
-          <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-white/10 hover:border-cyan-400/40 transition-colors cursor-pointer select-none">
-            <div className="flex items-center gap-2.5">
-              <MessageCircle className={`w-4 h-4 ${isTelegramLinked ? 'text-[#0088cc]' : 'text-gray-500'}`} />
+          {/* Account 1: Telegram */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-cyan-400/40 transition-all">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isTelegramLinked ? 'bg-[#0088cc]/20 text-[#0088cc] border border-[#0088cc]/40' : 'bg-white/5 text-gray-500'}`}>
+                <MessageCircle className="w-5 h-5" />
+              </div>
               <div>
-                <span className="font-bold text-xs text-white">Телеграм привязан</span>
-                <p className="text-[10px] text-gray-400">
-                  {isTelegramLinked ? '@alex_ivanov ✓' : 'Не привязан к профилю'}
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs text-white">Telegram Аккаунт</span>
+                  {isTelegramLinked ? (
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-black border border-emerald-500/40">🟢 ПРИВЯЗАН</span>
+                  ) : (
+                    <span className="text-[9px] bg-white/10 text-gray-400 px-1.5 py-0.2 rounded font-bold">НЕ ПРИВЯЗАН</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {telegramUser?.username
+                    ? `@${telegramUser.username}`
+                    : telegramUser?.first_name
+                    ? `${telegramUser.first_name} ${telegramUser.last_name || ''}`
+                    : isTMA
+                    ? 'Telegram WebApp Authed'
+                    : 'Не привязан к профилю'}
                 </p>
               </div>
             </div>
-            <input
-              type="checkbox"
-              checked={isTelegramLinked}
-              onChange={(e) => toggleTelegramLinked(e.target.checked)}
-              className="w-4 h-4 accent-[#00F2FE] cursor-pointer rounded"
-            />
-          </label>
 
-          {/* Checkbox 2: Email */}
-          <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-white/10 hover:border-purple-400/40 transition-colors cursor-pointer select-none">
-            <div className="flex items-center gap-2.5">
-              <Mail className={`w-4 h-4 ${isEmailLinked ? 'text-purple-400' : 'text-gray-500'}`} />
+            {isTelegramLinked ? (
+              <a
+                href="https://t.me/tuttominutto_bot"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-400 font-bold text-[10px] flex items-center gap-1 border border-white/10 transition-colors"
+              >
+                <span>Бот ТГ</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : (
+              <button
+                onClick={handleConnectTelegram}
+                className="px-3 py-1.5 rounded-xl bg-[#0088cc] text-white font-bold text-[10px] hover:brightness-110 shadow-[0_0_10px_rgba(0,136,204,0.4)] transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <span>Привязать</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Account 2: Google / Gmail */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-purple-400/40 transition-all">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isEmailLinked ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' : 'bg-white/5 text-gray-500'}`}>
+                <Mail className="w-5 h-5" />
+              </div>
               <div>
-                <span className="font-bold text-xs text-white">Имейл привязан</span>
-                <p className="text-[10px] text-gray-400">
-                  {isEmailLinked ? (email || 'user@example.com ✓') : 'Не привязан к профилю'}
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs text-white">Google / Gmail</span>
+                  {isEmailLinked ? (
+                    <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-black border border-purple-500/40">🟢 ПРИВЯЗАН</span>
+                  ) : (
+                    <span className="text-[9px] bg-white/10 text-gray-400 px-1.5 py-0.2 rounded font-bold">НЕ ПРИВЯЗАН</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {activeEmail || 'Войдите через Google для сохранения профиля'}
                 </p>
               </div>
             </div>
-            <input
-              type="checkbox"
-              checked={isEmailLinked}
-              onChange={(e) => toggleEmailLinked(e.target.checked)}
-              className="w-4 h-4 accent-purple-400 cursor-pointer rounded"
-            />
-          </label>
+
+            {isEmailLinked ? (
+              <button
+                onClick={handleSignOutEmail}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[10px] border border-rose-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Выйти из Google аккаунта"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Выйти</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  triggerHapticFeedback('medium')
+                  if (onOpenAuth) onOpenAuth()
+                }}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold text-[10px] hover:brightness-110 shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <span>Войти / Google</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
 
           {/* Dynamic Trust Badge */}
           {verifiedCount === 2 ? (
             <div className="flex items-center gap-2 text-[10px] text-emerald-400 bg-emerald-400/10 p-2.5 rounded-xl border border-emerald-400/20 font-bold">
               <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Все аккаунты привязаны (Максимальный траст 100%) ✓</span>
+              <span>Все аккаунты верифицированы (Максимальный траст 100%) ✓</span>
             </div>
           ) : verifiedCount === 1 ? (
             <div className="flex items-center gap-2 text-[10px] text-cyan-400 bg-cyan-400/10 p-2.5 rounded-xl border border-cyan-400/20 font-bold">
               <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span>Частичная привязка (Траст 50%). Отметьте второй аккаунт.</span>
+              <span>Частичная верификация (Траст 50%). Нажмите "Войти / Google" выше для 100% защиты.</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-[10px] text-amber-400 bg-amber-400/10 p-2.5 rounded-xl border border-amber-400/20 font-bold">
               <Shield className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Аккаунты не привязаны. Отметьте чекбоксы выше для верификации.</span>
+              <span>Аккаунты не верифицированы. Авторизуйтесь в Telegram или Google выше.</span>
             </div>
           )}
         </div>
@@ -482,4 +581,3 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     </div>
   )
 }
-

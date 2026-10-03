@@ -234,6 +234,11 @@ export function App() {
     // Onboarding tutorial auto-display on first visit
     const hasSeenOnboarding = localStorage.getItem('needtnow_onboarding_completed')
     const isPlaywright = typeof window !== 'undefined' && Boolean((window as any).isPlaywright)
+    
+    if (isPlaywright) {
+      (window as any).openSuperAdmin = () => setIsSuperAdminOpen(true);
+    }
+
     if (!hasSeenOnboarding && !isPlaywright) {
       setIsOnboardingOpen(true)
     }

@@ -150,3 +150,31 @@ export interface OfferInstance {
   createdAt: string
 }
 
+export interface TransactionItem {
+  id: string
+  type: 'deposit' | 'withdrawal' | 'payment' | 'fee'
+  user: string
+  amount: string
+  method: string
+  date: string
+  status: 'completed' | 'pending' | 'refunded' | 'failed'
+}
+
+export interface DisputeItem {
+  id: string
+  dealId: string
+  client: string
+  provider: string
+  amount: string
+  reason: string
+  status: 'open' | 'reviewing' | 'resolved' | 'closed'
+  priority: 'low' | 'medium' | 'high' | 'critical'
+}
+
+export interface SystemConfig {
+  id: string
+  platform_fee_percent: number
+  ai_agent_cost: number
+  updated_at: string
+}
+
