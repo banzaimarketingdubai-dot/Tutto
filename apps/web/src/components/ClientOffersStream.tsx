@@ -227,6 +227,12 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
                     className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white/20 shadow-md"
                   />
                   <div className="flex-1 space-y-1">
+                    {bid.attachedOffer && (
+                      <div className="text-[10px] font-black uppercase text-cyan-300 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-cyan-400" />
+                        <span>Из каталога: {bid.attachedOffer.title}</span>
+                      </div>
+                    )}
                     <p className="text-xs text-gray-200 leading-relaxed font-medium line-clamp-2">
                       {bid.comment || 'Готовы выполнить вашу заявку на лучшем уровне с гарантией.'}
                     </p>

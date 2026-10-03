@@ -19,7 +19,7 @@ import { CreateActionSheetModal } from './components/CreateActionSheetModal'
 import { MyDealsAndListingsView } from './components/MyDealsAndListingsView'
 import { ExploreView } from './components/ExploreView'
 import { MOCK_REQUESTS, SERVICE_TEMPLATES } from './data/mockData'
-import { RequestItem, BidItem, ServiceTemplate, MarketItem } from './types'
+import { RequestItem, BidItem, ServiceTemplate, MarketItem, OfferInstance } from './types'
 import { initTelegramApp, triggerHapticFeedback, isTelegramEnvironment } from './lib/telegram'
 import { CheckCircle2, Zap, Scale } from 'lucide-react'
 import { AdminDisputePanel } from './components/AdminDisputePanel'
@@ -426,7 +426,7 @@ export function App() {
     setSelectedMarketProduct(null)
   }
 
-  const handleSubmitBid = (requestId: string, price: number, comment: string) => {
+  const handleSubmitBid = (requestId: string, price: number, comment: string, attachedOffer?: OfferInstance) => {
     if (comment.startsWith('[CLARIFICATION]')) {
       const question = comment.replace('[CLARIFICATION] ', '')
       setRequests((prev) =>
@@ -473,6 +473,7 @@ export function App() {
         comment: comment || 'Вилла готова к бронированию!',
         status: 'accepted',
         createdAt: new Date().toISOString(),
+        attachedOffer: attachedOffer,
       }
 
       setActiveDealRequest(targetReq)
@@ -568,6 +569,7 @@ export function App() {
                   onOpenBidModal={(req) => setSelectedRequestForBid(req)}
                   onOpenQuickRequest={() => setIsAIAssistantOpen(true)}
                   requests={requests}
+                  onNavigateToBidsTab={() => handleSelectTab('my-bids')}
                   onAcceptBidDirectly={(req, bid) => {
                     triggerHapticFeedback('heavy')
                     setActiveDealRequest(req)

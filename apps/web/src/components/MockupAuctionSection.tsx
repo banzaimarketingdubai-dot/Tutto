@@ -16,6 +16,7 @@ interface MockupAuctionSectionProps {
   onOpenQuickRequest: (request: RequestItem) => void
   requests: RequestItem[]
   onAcceptBidDirectly?: (request: RequestItem, bid: BidItem) => void
+  onNavigateToBidsTab?: () => void
 }
 
 const RENT_CATEGORIES = [
@@ -213,6 +214,7 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
   onOpenQuickRequest,
   requests,
   onAcceptBidDirectly,
+  onNavigateToBidsTab,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -341,71 +343,45 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
         </defs>
       </svg>
 
-      {/* JTBD Focus Banner when active requests exist */}
+      {/* Active Requests Pill Banner on Home */}
       {myRequests.length > 0 && (
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/80 to-slate-900 border border-cyan-500/50 shadow-[0_0_20px_rgba(0,242,254,0.2)] animate-fadeIn">
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/80 to-slate-900 border border-cyan-500/50 shadow-[0_0_20px_rgba(0,242,254,0.25)] animate-fadeIn mx-1">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-ping" />
             <div>
-              <div className="text-xs font-black uppercase text-[#00F2FE] tracking-wide flex items-center gap-1.5">
-                <span>🎯 ФОКУС: ПРИЁМ ОФФЕРОВ ПО ЗАЯВКАМ</span>
+              <div className="text-xs font-black uppercase text-white tracking-wide flex items-center gap-1.5">
+                <span>⚡ Активных заявок: {myRequests.length}</span>
+                <span className="px-2 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE] text-[10px] font-mono border border-[#00F2FE]/40">
+                  {myRequests.reduce((acc, r) => acc + (r.bidsCount || 3), 0)} откликов
+                </span>
               </div>
-              <p className="text-[10px] text-gray-400 font-medium">Интерфейс очищен от поиска и категорий</p>
+              <p className="text-[10px] text-gray-400 font-medium">Отклики исполнителей поступают в ваш Центр Управления</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              triggerHapticFeedback('light')
-              setShowSearchHeader((prev) => !prev)
-            }}
-            className="text-[11px] font-bold text-cyan-300 hover:text-white bg-cyan-500/20 px-3 py-1.5 rounded-xl border border-cyan-500/40 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>{showSearchHeader ? 'Скрыть поиск' : 'Поиск / Категории'}</span>
-          </button>
+          {onNavigateToBidsTab && (
+            <button
+              onClick={() => {
+                triggerHapticFeedback('heavy')
+                onNavigateToBidsTab()
+              }}
+              className="text-[11px] font-extrabold text-black bg-gradient-to-r from-[#00F2FE] to-[#00DFEA] px-3.5 py-2 rounded-xl shadow-[0_0_12px_rgba(0,242,254,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <span>Отклики ⭐</span>
+              <ArrowRight className="w-3.5 h-3.5 text-black" />
+            </button>
+          )}
         </div>
       )}
       
-      {showSearchHeader && (
-        <FeedHeader 
-          categories={mode === 'rent' ? RENT_CATEGORIES : SERVICES_CATEGORIES}
-          activeCategory={activeCategory}
-          onSelectCategory={onSelectCategory}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-        />
-      )}
-
-      {/* 2. PINNED MY ACTIVE REQUESTS SECTION (JTBD Focus Hub) */}
-      {myRequests.length > 0 && (
-        <div className="space-y-3 pt-1 animate-fadeIn">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#CCFF00] animate-ping" />
-              <h2 className="text-[15px] font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                <span>📌 МОИ АКТИВНЫЕ ЗАПРОСЫ</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] text-xs border border-[#CCFF00]/40 font-mono">
-                  {myRequests.length}
-                </span>
-              </h2>
-            </div>
-            <span className="text-[11px] text-[#00F2FE] font-bold">Закреплено вверху</span>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {myRequests.map((item) => (
-              <MyPinnedRequestCard 
-                key={item.id} 
-                item={item} 
-                onOpenBidModal={onOpenBidModal} 
-                onAcceptBidDirectly={onAcceptBidDirectly}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <FeedHeader 
+        categories={mode === 'rent' ? RENT_CATEGORIES : SERVICES_CATEGORIES}
+        activeCategory={activeCategory}
+        onSelectCategory={onSelectCategory}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
       {/* 3. LIVE GENERAL FEED */}
       <div className="space-y-4 pt-2">

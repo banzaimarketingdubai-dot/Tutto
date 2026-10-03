@@ -10,7 +10,7 @@ interface BidModalProps {
   request: RequestItem | null
   isOpen: boolean
   onClose: () => void
-  onSubmitBid: (requestId: string, price: number, comment: string) => void
+  onSubmitBid: (requestId: string, price: number, comment: string, attachedOffer?: OfferInstance) => void
 }
 
 export const BidModal: React.FC<BidModalProps> = ({
@@ -30,6 +30,7 @@ export const BidModal: React.FC<BidModalProps> = ({
       setPrice(request.budget ? String(request.budget) : '180')
       setIsClarifying(false)
       setClarifyText('')
+      setSelectedOffer(null)
     }
   }, [request])
 
@@ -57,7 +58,6 @@ export const BidModal: React.FC<BidModalProps> = ({
       }
       triggerHapticFeedback('medium')
       triggerNotificationFeedback('success')
-      // Custom handler for clarification (can be passed via props, but for now we just close or call onSubmitBid with a special flag/comment)
       onSubmitBid(request.id, 0, `[CLARIFICATION] ${clarifyText}`)
       onClose()
       return
@@ -71,17 +71,7 @@ export const BidModal: React.FC<BidModalProps> = ({
 
     triggerHapticFeedback('medium')
     triggerNotificationFeedback('success')
-    // Prefix the comment with offer info if one was selected
-    let finalComment = comment
-    if (selectedOffer) {
-      const newPrice = parseFloat(price)
-      if (newPrice !== selectedOffer.price) {
-        finalComment = `[📌 Прикреплен шаблон: ${selectedOffer.title}]\n⚠️ Специальная цена для вас: $${newPrice} (вместо $${selectedOffer.price})\n\n${comment}`
-      } else {
-        finalComment = `[📌 Прикреплен шаблон: ${selectedOffer.title}]\n\n${comment}`
-      }
-    }
-    onSubmitBid(request.id, parseFloat(price), finalComment)
+    onSubmitBid(request.id, parseFloat(price), comment, selectedOffer || undefined)
     onClose()
   }
 

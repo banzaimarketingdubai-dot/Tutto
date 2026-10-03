@@ -135,6 +135,39 @@ export const OfferPreviewModal: React.FC<OfferPreviewModalProps> = ({
           <div className="text-gray-400 line-clamp-1">{request.description}</div>
         </div>
 
+        {/* Attached Catalog Item from Provider's Shop Profile */}
+        {offer.attachedOffer && (
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-[#0F172A] to-[#121824] border-2 border-cyan-400/60 space-y-2.5 shadow-[0_0_20px_rgba(0,242,254,0.2)]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-full border border-cyan-500/40 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                Прикреплено из витрины исполнителя
+              </span>
+              <span className="text-xs font-mono font-bold text-amber-400">
+                Каталог: ${offer.attachedOffer.price}
+              </span>
+            </div>
+
+            <div className="flex gap-3 items-center">
+              {offer.attachedOffer.imageUrl && (
+                <img
+                  src={offer.attachedOffer.imageUrl}
+                  alt={offer.attachedOffer.title}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white/10 shadow-md"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h4 className="font-extrabold text-sm text-white line-clamp-1">
+                  {offer.attachedOffer.title}
+                </h4>
+                <p className="text-xs text-gray-300 line-clamp-2 mt-0.5 leading-snug">
+                  {offer.attachedOffer.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Offer Terms & Description */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">

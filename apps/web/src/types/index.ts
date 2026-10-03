@@ -68,6 +68,8 @@ export interface BidItem {
   comment: string
   status: 'pending' | 'accepted' | 'rejected' | 'withdrawn'
   createdAt: string
+  attachedOffer?: OfferInstance
+  mediaUrl?: string
 }
 
 export interface UserProfile {
