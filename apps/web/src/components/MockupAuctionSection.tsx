@@ -219,6 +219,12 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
   const [sortBy, setSortBy] = useState<'urgent' | 'budget' | 'newest'>('urgent')
   const timerRef = useRef<any>(null)
 
+  // Filter user's own active requests (Pinned at top!)
+  const myRequests = requests.filter((r) => r.clientId === 'usr-current' || (r.clientName && r.clientName.includes('Александр')))
+  
+  // JTBD Focus Mode: If user has active open requests, collapse search, chips and voice input by default to remove clutter!
+  const [showSearchHeader, setShowSearchHeader] = useState<boolean>(() => myRequests.length === 0)
+
   const hubsList = [
     { id: 'dubai', label: '🇦🇪 ДУБАЙ' },
     { id: 'bali', label: '🇮🇩 БАЛИ' },
@@ -301,9 +307,6 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
     ? SERVICE_TEMPLATES.filter((tmpl) => tmpl.categoryL1Id === activeCategory)
     : SERVICE_TEMPLATES
 
-  // User's own active requests (Pinned at top!)
-  const myRequests = requests.filter((r) => r.clientId === 'usr-current' || (r.clientName && r.clientName.includes('Александр')))
-
   // Only use actual requests for the main feed
   const combinedItems = requests.filter((r) => !myRequests.some((m) => m.id === r.id))
 
@@ -337,16 +340,43 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
           </linearGradient>
         </defs>
       </svg>
+
+      {/* JTBD Focus Banner when active requests exist */}
+      {myRequests.length > 0 && (
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/80 to-slate-900 border border-cyan-500/50 shadow-[0_0_20px_rgba(0,242,254,0.2)] animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-ping" />
+            <div>
+              <div className="text-xs font-black uppercase text-[#00F2FE] tracking-wide flex items-center gap-1.5">
+                <span>🎯 ФОКУС: ПРИЁМ ОФФЕРОВ ПО ЗАЯВКАМ</span>
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">Интерфейс очищен от поиска и категорий</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              triggerHapticFeedback('light')
+              setShowSearchHeader((prev) => !prev)
+            }}
+            className="text-[11px] font-bold text-cyan-300 hover:text-white bg-cyan-500/20 px-3 py-1.5 rounded-xl border border-cyan-500/40 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>{showSearchHeader ? 'Скрыть поиск' : 'Поиск / Категории'}</span>
+          </button>
+        </div>
+      )}
       
-      <FeedHeader 
-        categories={mode === 'rent' ? RENT_CATEGORIES : SERVICES_CATEGORIES}
-        activeCategory={activeCategory}
-        onSelectCategory={onSelectCategory}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-      />
+      {showSearchHeader && (
+        <FeedHeader 
+          categories={mode === 'rent' ? RENT_CATEGORIES : SERVICES_CATEGORIES}
+          activeCategory={activeCategory}
+          onSelectCategory={onSelectCategory}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+        />
+      )}
 
       {/* 2. PINNED MY ACTIVE REQUESTS SECTION (JTBD Focus Hub) */}
       {myRequests.length > 0 && (
