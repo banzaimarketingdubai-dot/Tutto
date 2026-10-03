@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square } from 'lucide-react'
-import { analyzeRequestFlowWithAI, SmartAIResponse, ParsedRequest } from '../lib/gemini'
-import { triggerHapticFeedback } from '../lib/telegram'
+import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw } from 'lucide-react'
+import { analyzeRequestFlowWithAI, parseDeterministicRequest, ParsedRequest } from '../lib/gemini'
+import { triggerHapticFeedback, triggerNotificationFeedback, sendSuperadminErrorAlert } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
 
 interface AIAssistantModalProps {
@@ -35,7 +35,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   const [isRecording, setIsRecording] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [finalCard, setFinalCard] = useState<ParsedRequest | null>(null)
-  
+  const [aiError, setAiError] = useState<string | null>(null)
+
   const recognitionRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -43,8 +44,9 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     if (isOpen) {
       setMessages([{ role: 'model', text: 'Привет! Что вам нужно? Напишите или скажите голосом.' }])
       setFinalCard(null)
+      setAiError(null)
       setInputText('')
-      
+
       // Init Speech Recognition
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
       if (SpeechRecognition) {
@@ -52,7 +54,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           recognitionRef.current = new SpeechRecognition()
           recognitionRef.current.continuous = false
           recognitionRef.current.lang = 'ru-RU'
-          
+
           recognitionRef.current.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript
             handleUserSubmit(transcript)
@@ -63,20 +65,24 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       }
 
       if (initialPrompt && initialPrompt.trim()) {
-         // Auto submit if text was typed in the main feed
-         setTimeout(() => {
-            handleUserSubmit(initialPrompt)
-         }, 300)
+        setTimeout(() => {
+          handleUserSubmit(initialPrompt)
+        }, 300)
       } else if (startVoice && recognitionRef.current) {
-         // Auto start recording
-         setTimeout(() => {
+        setTimeout(() => {
+          try {
             recognitionRef.current.start()
             setIsRecording(true)
-         }, 300)
+          } catch (e) {
+            console.warn(e)
+          }
+        }, 300)
       }
     } else {
       if (recognitionRef.current) {
-        recognitionRef.current.stop()
+        try {
+          recognitionRef.current.stop()
+        } catch (e) {}
       }
       setIsRecording(false)
     }
@@ -84,7 +90,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isAnalyzing])
+  }, [messages, isAnalyzing, finalCard, aiError])
 
   const toggleRecording = () => {
     triggerHapticFeedback('light')
@@ -93,48 +99,57 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       setIsRecording(false)
     } else {
       if (recognitionRef.current) {
-        recognitionRef.current.start()
-        setIsRecording(true)
+        try {
+          recognitionRef.current.start()
+          setIsRecording(true)
+        } catch (e) {
+          setIsRecording(false)
+        }
       } else {
         alert('Голосовой ввод не поддерживается в вашем браузере')
       }
     }
   }
 
-  // Wrap logic in a separate function to easily call it
   const executeUserSubmit = async (text: string) => {
     if (!text.trim()) return
     triggerHapticFeedback('light')
-    
-    // Check if we are already analyzing
-    setIsAnalyzing(prev => {
-      if (prev) return true
-      return true
-    })
+    setAiError(null)
+    setIsAnalyzing(true)
 
-    const newMessages: Message[] = [...messages, { role: 'user', text }]
-    
-    // We update messages by using functional update to ensure no race conditions
-    setMessages(prev => {
-      // prevent duplicate processing for the exact same auto-prompt
-      if (prev.length > 1 && prev[prev.length - 1].text === text) return prev;
-      return [...prev, { role: 'user', text }]
-    })
-    
+    const updatedHistory: Message[] = [...messages, { role: 'user', text }]
+    setMessages(updatedHistory)
     setInputText('')
 
     try {
-      // Use the newMessages variable here since state update is async
-      // But we need to use the full history
-      const history = [...messages, { role: 'user', text }] as Message[]
-      const response = await analyzeRequestFlowWithAI(history, currentHub, currentDistrict)
+      const response = await analyzeRequestFlowWithAI(updatedHistory, currentHub, currentDistrict)
+
       if (response.status === 'clarify' && response.question) {
         setMessages(prev => [...prev, { role: 'model', text: response.question as string }])
       } else if (response.status === 'complete' && response.requestParams) {
         setFinalCard(response.requestParams)
+        setMessages(prev => [...prev, { role: 'model', text: '✅ Карточка заявки сформирована! Ознакомьтесь и нажмите "Опубликовать заявку".' }])
+      } else {
+        // Fallback to deterministic parser
+        const fallbackRes = parseDeterministicRequest(updatedHistory, currentHub, currentDistrict)
+        if (fallbackRes.requestParams) {
+          setFinalCard(fallbackRes.requestParams)
+          setMessages(prev => [...prev, { role: 'model', text: '✅ Карточка заявки сформирована на основе текста!' }])
+        }
       }
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'model', text: 'Произошла ошибка при анализе. Попробуйте еще раз.' }])
+    } catch (err: any) {
+      console.error('AI Processing Error:', err)
+      const errorDetails = err?.message || 'Неизвестная ошибка ИИ API'
+      setAiError(errorDetails)
+
+      // Send error alert to Superadmin
+      sendSuperadminErrorAlert(errorDetails, err?.stack, 'AIAssistantModal executeUserSubmit')
+
+      // Also generate immediate fallback card so user is never blocked
+      const fallbackRes = parseDeterministicRequest(updatedHistory, currentHub, currentDistrict)
+      if (fallbackRes.requestParams) {
+        setFinalCard(fallbackRes.requestParams)
+      }
     } finally {
       setIsAnalyzing(false)
     }
@@ -145,6 +160,16 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     executeUserSubmit(text)
   }
 
+  const handleApplyFallback = () => {
+    triggerHapticFeedback('medium')
+    setAiError(null)
+    const fallbackRes = parseDeterministicRequest(messages, currentHub, currentDistrict)
+    if (fallbackRes.requestParams) {
+      setFinalCard(fallbackRes.requestParams)
+      setMessages(prev => [...prev, { role: 'model', text: '⚡ Карточка сформирована локальным алгоритмом.' }])
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -152,7 +177,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12 safe-area-top border-b border-white/10 bg-[#0A101D]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
             <Bot className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
@@ -184,8 +209,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex max-w-[85%] ${msg.role === 'user' ? 'self-end' : 'self-start'}`}>
             <div className={`p-3.5 rounded-2xl text-[15px] leading-snug ${
-              msg.role === 'user' 
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-sm' 
+              msg.role === 'user'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-sm'
                 : 'bg-white/10 text-gray-200 rounded-tl-sm border border-white/5'
             }`}>
               {msg.text}
@@ -197,32 +222,67 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           <div className="flex self-start max-w-[80%]">
             <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 rounded-tl-sm flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-              <span className="text-[14px] text-gray-400">Анализирую...</span>
+              <span className="text-[14px] text-gray-400">Нейросеть анализирует запрос...</span>
             </div>
           </div>
         )}
 
+        {/* Error Alert Box */}
+        {aiError && (
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-white space-y-3 animate-fadeIn">
+            <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>Отчет об ошибке ИИ API</span>
+            </div>
+            <p className="text-xs text-gray-300 font-mono bg-black/40 p-2 rounded-lg border border-white/5 overflow-x-auto">
+              {aiError}
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                onClick={handleApplyFallback}
+                className="flex-1 py-2 px-3 bg-[#00F2FE] text-black font-bold text-xs rounded-xl hover:brightness-110 flex items-center justify-center gap-1"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Сформировать карту (Фоллбэк)</span>
+              </button>
+              {onSkipToManual && (
+                <button
+                  onClick={() => {
+                    onClose()
+                    onSkipToManual()
+                  }}
+                  className="py-2 px-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/10"
+                >
+                  Заполнить вручную
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Final Card Output */}
         {finalCard && (
-          <div className="flex flex-col gap-3 mt-4 animate-slideUp">
-            <div className="p-4 rounded-3xl bg-cyan-900/20 border border-cyan-500/30">
-              <div className="flex items-center gap-2 mb-3 text-cyan-300 font-bold text-[14px] uppercase tracking-wider">
-                <Sparkles className="w-4 h-4" />
-                Карточка готова
+          <div className="flex flex-col gap-3 mt-2 animate-slideUp">
+            <div className="p-5 rounded-3xl bg-cyan-900/20 border border-cyan-500/40 shadow-[0_0_30px_rgba(0,242,254,0.15)]">
+              <div className="flex items-center gap-2 mb-3 text-cyan-300 font-bold text-[13px] uppercase tracking-wider">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                Карточка запроса готовая к публикации
               </div>
-              <h3 className="text-[18px] font-bold text-white mb-2">{finalCard.title}</h3>
-              <p className="text-[14px] text-gray-300 mb-4">{finalCard.description}</p>
+              <h3 className="text-[18px] font-black text-white mb-2">{finalCard.title}</h3>
+              <p className="text-[14px] text-gray-300 mb-4 leading-relaxed">{finalCard.description}</p>
               
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-white/10 rounded-lg text-[13px] text-white">💰 ${finalCard.budget || 'По договоренности'}</span>
-                <span className="px-3 py-1 bg-white/10 rounded-lg text-[13px] text-white">📍 {finalCard.district}</span>
+              <div className="flex flex-wrap gap-2 mb-5">
+                <span className="px-3 py-1.5 bg-white/10 rounded-xl text-[13px] text-white font-bold">💰 ${finalCard.budget || 'По договоренности'}</span>
+                <span className="px-3 py-1.5 bg-white/10 rounded-xl text-[13px] text-white font-bold">📍 {finalCard.district || currentDistrict}</span>
+                <span className="px-3 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-xl text-[13px] font-bold border border-cyan-500/30">📂 {finalCard.categoryName}</span>
               </div>
 
               <button 
-                onClick={() => { triggerHapticFeedback('medium'); onPublish(finalCard); onClose() }}
-                className="w-full py-3.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[16px] rounded-xl flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.3)]"
+                onClick={() => { triggerHapticFeedback('heavy'); triggerNotificationFeedback('success'); onPublish(finalCard); onClose() }}
+                className="w-full py-3.5 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[16px] rounded-xl flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.4)] hover:brightness-110 active:scale-95 transition-all cursor-pointer"
               >
                 <Check className="w-5 h-5" />
-                Опубликовать заявку
+                Опубликовать заявку сейчас
               </button>
             </div>
           </div>
@@ -239,12 +299,12 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleUserSubmit(inputText) } }}
-                placeholder="Текст или голос..."
+                placeholder="Напишите текст или надиктуйте голосом..."
                 className="w-full bg-transparent text-white text-[15px] px-3 py-2.5 max-h-[100px] outline-none resize-none"
                 rows={1}
               />
               {inputText.trim() ? (
-                <button onClick={() => handleUserSubmit(inputText)} className="w-10 h-10 shrink-0 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mr-1">
+                <button onClick={() => handleUserSubmit(inputText)} className="w-10 h-10 shrink-0 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mr-1 hover:bg-cyan-500/30">
                   <Send className="w-4 h-4" />
                 </button>
               ) : (
