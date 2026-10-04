@@ -69,7 +69,7 @@ test.describe('Rental Niche E2E Flows (Transport & Real Estate)', () => {
     await expect(page.locator('span').filter({ hasText: 'Предварительный диалог' }).first()).toBeVisible({ timeout: 5000 })
 
     // Customer sends 1 replica (question)
-    const chatInput = page.locator('input[placeholder*="вопрос"]').first()
+    const chatInput = page.locator('form input[type="text"]').first()
     await expect(chatInput).toBeVisible()
     await chatInput.fill('Здравствуйте, возможна ли доставка до пляжа Раваи к 10:00?')
 

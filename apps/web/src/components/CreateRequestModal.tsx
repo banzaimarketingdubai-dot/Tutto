@@ -27,9 +27,6 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   useScrollLock(isOpen)
 
   const lang = currentLang || detectDefaultLanguage()
-  if (!isOpen) return null
-
-
   const activeHub = HUBS.find((h) => h.id === currentHub) || HUBS[0]
 
   const [title, setTitle] = useState('')
@@ -46,6 +43,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [mediaUrls, setMediaUrls] = useState<string[]>([])
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+
+  if (!isOpen) return null
 
   const handleCategoryChange = (catId: string) => {
     setCategoryL1Id(catId)
