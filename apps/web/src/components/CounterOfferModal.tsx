@@ -80,9 +80,11 @@ export const CounterOfferModal: React.FC<CounterOfferModalProps> = ({
             </label>
             <div className="relative">
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={customPrice}
-                onChange={(e) => setCustomPrice(e.target.value)}
+                onChange={(e) => setCustomPrice(e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, ''))}
                 className="w-full bg-slate-900 border-2 border-cyan-400 rounded-2xl px-4 py-3 text-white text-xl font-black outline-none focus:ring-2 focus:ring-cyan-400"
               />
               <span className="absolute right-4 top-3.5 text-cyan-400 font-black text-sm">USD</span>

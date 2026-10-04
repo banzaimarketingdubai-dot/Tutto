@@ -9,7 +9,7 @@ import { ClientOffersStream } from './ClientOffersStream'
 interface MyDealsAndListingsViewProps {
   myRequests: RequestItem[]
   myMarketItems: MarketItem[]
-  onOpenDealChat: (req: RequestItem, bid: BidItem) => void
+  onOpenDealChat: (req: RequestItem, bid: BidItem, isPreDeal?: boolean) => void
   onOpenMarketItem: (item: MarketItem) => void
   onDeleteMarketItem: (itemId: string) => void
   onDeleteRequest: (reqId: string) => void
@@ -302,7 +302,10 @@ export const MyDealsAndListingsView: React.FC<MyDealsAndListingsViewProps> = ({
                     request={req}
                     bids={bids}
                     onAcceptOffer={(bid) => {
-                      onOpenDealChat(req, bid)
+                      onOpenDealChat(req, bid, false)
+                    }}
+                    onClarifyOffer={(bid) => {
+                      onOpenDealChat(req, bid, true)
                     }}
                   />
                 </div>

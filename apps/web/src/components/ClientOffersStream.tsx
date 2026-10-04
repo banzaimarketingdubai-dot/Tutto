@@ -256,26 +256,15 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
                   <button
                     onClick={() => {
                       triggerHapticFeedback('light')
-                      setPreviewOffer(bid)
-                    }}
-                    className="px-3 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Карточка</span>
-                  </button>
-
-                  {onClarifyOffer && (
-                    <button
-                      onClick={() => {
-                        triggerHapticFeedback('light')
+                      if (onClarifyOffer) {
                         onClarifyOffer(bid)
-                      }}
-                      className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 font-bold text-xs border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Чат / Торг</span>
-                    </button>
-                  )}
+                      }
+                    }}
+                    className="px-3.5 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Задать вопрос</span>
+                  </button>
 
                   <button
                     onClick={() => {

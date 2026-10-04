@@ -91,7 +91,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       categoryL1Name: selectedCategory.titleRu,
       hub: selectedHub,
       district,
-      budget: budgetType === 'fixed' ? parseFloat(budgetValue) || 0 : null,
+      budget: budgetType === 'fixed' && budgetValue ? parseFloat(budgetValue) || 0 : null,
       currency: 'USD',
       mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
       isFeatured,
@@ -329,10 +329,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             {budgetType === 'fixed' && (
               <div className="relative">
                 <input
-                  type="number"
-                  placeholder="200"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Укажите сумму (или оставьте пустым)"
                   value={budgetValue}
-                  onChange={(e) => setBudgetValue(e.target.value)}
+                  onChange={(e) => setBudgetValue(e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, ''))}
                   className="w-full bg-slate-900/90 border border-white/10 rounded-xl px-3 py-2.5 text-white pr-16 focus:border-cyan-400 outline-none font-bold text-sm"
                 />
                 <span className="absolute right-3 top-2.5 text-cyan-400 font-bold">USD</span>

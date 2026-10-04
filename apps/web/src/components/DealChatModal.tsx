@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, ShieldCheck, CheckCircle2, AlertTriangle, Star, Clock, ChevronUp, ChevronDown, UserCheck, ShieldAlert, Award } from 'lucide-react'
+import { X, Send, ShieldCheck, CheckCircle2, AlertTriangle, Star, Clock, ChevronUp, ChevronDown, UserCheck, ShieldAlert, Award, MessageSquare } from 'lucide-react'
 import { RequestItem, BidItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { supabase } from '../lib/supabase'
 import { ReviewModal } from './ReviewModal'
+import { OfferPreviewModal } from './OfferPreviewModal'
 import { sendBrowserPushNotification, playNotificationChime } from '../lib/notifications'
 import { useScrollLock } from '../hooks/useScrollLock'
 
@@ -15,6 +16,8 @@ interface DealChatModalProps {
   onCompleteDeal: () => void
   onNewMessage?: (msg: ChatMessage) => void
   currentUserRole?: 'client' | 'provider'
+  isPreDeal?: boolean
+  onAcceptOffer?: (bid: BidItem) => void
 }
 
 interface ChatMessage {
@@ -35,12 +38,16 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
   onCompleteDeal,
   onNewMessage,
   currentUserRole = 'client',
+  isPreDeal = false,
+  onAcceptOffer,
 }) => {
   useScrollLock(isOpen)
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [dealStatus, setDealStatus] = useState<DealStatusType>('in_progress')
+  const [isPreDealMode, setIsPreDealMode] = useState(isPreDeal)
+  const [showOfferPreviewModal, setShowOfferPreviewModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [isNoticeExpanded, setIsNoticeExpanded] = useState(true)
   const [simulatedRole, setSimulatedRole] = useState<'client' | 'provider'>(currentUserRole)
@@ -48,36 +55,83 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
   const [hideScamWarning, setHideScamWarning] = useState(() => localStorage.getItem('hide_scam_warning') === 'true')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const clientMessagesCount = messages.filter((m) => m.senderRole === 'client').length
+  const isPreDealLocked = isPreDealMode && clientMessagesCount >= 1
+
   useEffect(() => {
     if (isOpen && messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, isOpen])
 
-
   useEffect(() => {
     if (isOpen && request && bid) {
       setSimulatedRole(currentUserRole)
-      setMessages([
-        {
-          id: 'msg-1',
-          senderRole: 'system',
-          senderName: 'TuttoMinutto System',
-          content: `🎉 Оффер принят! Сделка по «${request.title}» переведена в статус «В процессе». Договоренная сумма: $${bid.proposedPrice}.`,
-          timestamp: 'Только что',
-        },
-        {
-          id: 'msg-2',
-          senderRole: 'provider',
-          senderName: bid.providerName,
-          content: bid.comment || 'Здравствуйте! Готов к выполнению заказа.',
-          timestamp: '1 мин назад',
-        },
-      ])
+      const isPre = Boolean(isPreDeal)
+      setIsPreDealMode(isPre)
+
+      if (isPre) {
+        setMessages([
+          {
+            id: 'msg-pre-sys-1',
+            senderRole: 'system',
+            senderName: 'TuttoMinutto System',
+            content: `💬 Предварительный диалог по «${request.title}». Задайте свой вопрос исполнителю до принятия заявки (лимит: по 1 реплике от каждого).`,
+            timestamp: 'Только что',
+          },
+          {
+            id: 'msg-pre-prov-1',
+            senderRole: 'provider',
+            senderName: bid.providerName,
+            content: bid.comment || 'Здравствуйте! Готов к выполнению заказа.',
+            timestamp: '1 мин назад',
+          },
+        ])
+      } else {
+        setMessages([
+          {
+            id: 'msg-1',
+            senderRole: 'system',
+            senderName: 'TuttoMinutto System',
+            content: `🎉 Оффер принят! Сделка по «${request.title}» переведена в статус «В процессе». Договоренная сумма: $${bid.proposedPrice}.`,
+            timestamp: 'Только что',
+          },
+          {
+            id: 'msg-2',
+            senderRole: 'provider',
+            senderName: bid.providerName,
+            content: bid.comment || 'Здравствуйте! Готов к выполнению заказа.',
+            timestamp: '1 мин назад',
+          },
+        ])
+      }
       setDealStatus('in_progress')
       setIsNoticeExpanded(true)
     }
-  }, [isOpen, request, bid])
+  }, [isOpen, request, bid, isPreDeal])
+
+  const handleAcceptOfferFromPreDeal = (acceptedBid: BidItem) => {
+    setIsPreDealMode(false)
+    setDealStatus('in_progress')
+    setShowOfferPreviewModal(false)
+    triggerHapticFeedback('heavy')
+    triggerNotificationFeedback('success')
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-accepted-sys-${Date.now()}`,
+        senderRole: 'system',
+        senderName: 'TuttoMinutto System',
+        content: `🎉 Оффер принят! Сделка по «${request?.title || ''}» переведена в статус «В процессе». Договоренная сумма: $${acceptedBid.proposedPrice}.`,
+        timestamp: 'Только что',
+      },
+    ])
+
+    if (onAcceptOffer) {
+      onAcceptOffer(acceptedBid)
+    }
+  }
 
   // Supabase Realtime Channel Subscription for live deal chat
   useEffect(() => {
@@ -125,7 +179,7 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || dealStatus === 'completed') return
+    if (!newMessage.trim() || dealStatus === 'completed' || isPreDealLocked) return
 
     const text = newMessage.trim()
     setNewMessage('')
@@ -155,12 +209,12 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
       // Ignore if offline
     }
 
-    // Auto-reply simulation based on role
+    // Auto-reply simulation based on role (only in full active deal mode)
     const autoReplyRole = isClient ? 'provider' : 'client'
     const autoReplyName = isClient ? bid.providerName : 'Александр (Заказчик)'
     const autoReplyContent = isClient ? 'Принято! Все условия согласованы.' : 'Отлично, жду выполнения.'
 
-    if (dealStatus === 'in_progress') {
+    if (dealStatus === 'in_progress' && !isPreDealMode) {
       setTimeout(() => {
         const replyMsg: ChatMessage = {
           id: `msg-reply-${Date.now()}`,
@@ -273,25 +327,27 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
           <div className="px-4 py-2 bg-[#0D1117] border-b border-white/10 flex items-center justify-between text-[11px] font-bold tracking-wider shrink-0 z-10">
             <div className="flex items-center gap-2">
               <span className="text-gray-400 uppercase">Статус:</span>
-              {dealStatus === 'in_progress' && (
+              {isPreDealMode ? (
+                <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-400/15 px-2 py-0.5 rounded-full border border-amber-400/40">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  Предварительный диалог
+                </span>
+              ) : dealStatus === 'in_progress' ? (
                 <span className="inline-flex items-center gap-1 text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded-full border border-[#00F2FE]/30 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#00F2FE]" />
                   В процессе
                 </span>
-              )}
-              {dealStatus === 'awaiting_confirmation' && (
+              ) : dealStatus === 'awaiting_confirmation' ? (
                 <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-400/15 px-2 py-0.5 rounded-full border border-amber-400/40 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                   Ждёт подтверждения
                 </span>
-              )}
-              {dealStatus === 'completed' && (
+              ) : dealStatus === 'completed' ? (
                 <span className="inline-flex items-center gap-1 text-[#CCFF00] bg-[#CCFF00]/15 px-2 py-0.5 rounded-full border border-[#CCFF00]/40">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#CCFF00]" />
                   Сделка закрыта
                 </span>
-              )}
-              {dealStatus === 'disputed' && (
+              ) : (
                 <span className="inline-flex items-center gap-1 text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full border border-red-500/40">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                   Апелляция / Спор
@@ -393,13 +449,52 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
                 </div>
               );
             })}
+
+            {/* In-Dialogue Locked System Message with Accept Button */}
+            {isPreDealLocked && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200 text-xs text-center font-medium my-3 space-y-3 shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-fadeIn">
+                <div className="flex items-center justify-center gap-1.5 font-bold text-amber-300 text-sm">
+                  <span>🔒 Предварительный диалог завершен</span>
+                </div>
+                <p className="text-gray-200 text-xs leading-relaxed">
+                  Согласно правилам: по 1 реплике от каждого участника. Для продолжения общения и выполнения заказа необходимо принять заявку.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHapticFeedback('heavy')
+                    setShowOfferPreviewModal(true)
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#00F2FE] via-[#00DFEA] to-[#CCFF00] text-black font-black text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.5)] hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-black fill-black" />
+                  <span>Принять заявку (${bid.proposedPrice})</span>
+                </button>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* 5. Dynamic Role Action Bar (Липкий подвал действий) */}
           <div className="p-3 bg-[#121722] border-t border-white/10 space-y-2 shrink-0 relative z-20">
+            {/* Quick Accept CTA in Pre-Deal before locking */}
+            {isPreDealMode && !isPreDealLocked && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHapticFeedback('heavy')
+                  setShowOfferPreviewModal(true)
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#00F2FE]/20 via-[#00DFEA]/20 to-[#CCFF00]/20 hover:from-[#00F2FE]/30 hover:to-[#CCFF00]/30 text-cyan-300 font-extrabold text-xs border border-cyan-400/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm mb-1"
+              >
+                <CheckCircle2 className="w-4 h-4 text-[#00F2FE]" />
+                <span>Принять заявку (${bid.proposedPrice})</span>
+              </button>
+            )}
+
             {/* Contextual Action Buttons depending on role & deal state */}
-            {simulatedRole === 'provider' && dealStatus === 'in_progress' && (
+            {simulatedRole === 'provider' && dealStatus === 'in_progress' && !isPreDealMode && (
               <button
                 onClick={handleProviderMarkDone}
                 className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#CCFF00] to-[#B8E600] text-black font-black text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(204,255,0,0.3)] hover:brightness-110 active:scale-[0.98] transition-all"
@@ -409,7 +504,7 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
               </button>
             )}
 
-            {simulatedRole === 'client' && (dealStatus === 'in_progress' || dealStatus === 'awaiting_confirmation') && (
+            {simulatedRole === 'client' && !isPreDealMode && (dealStatus === 'in_progress' || dealStatus === 'awaiting_confirmation') && (
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -445,16 +540,22 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
             <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-1">
               <input
                 type="text"
-                placeholder={dealStatus === 'completed' ? 'Сделка завершена' : 'Напишите сообщение...'}
+                placeholder={
+                  dealStatus === 'completed'
+                    ? 'Сделка завершена'
+                    : isPreDealLocked
+                    ? '🔒 Диалог заблокирован. Примите заявку'
+                    : 'Задайте свой вопрос исполнителю...'
+                }
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                disabled={dealStatus === 'completed'}
+                disabled={dealStatus === 'completed' || isPreDealLocked}
                 className="flex-1 bg-[#070B12] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:border-[#00F2FE] outline-none disabled:opacity-50"
               />
               <button
                 type="submit"
-                disabled={dealStatus === 'completed' || !newMessage.trim()}
-                className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00F2FE] to-[#00F2FE] flex items-center justify-center text-black font-extrabold hover:scale-105 active:scale-95 transition-transform disabled:opacity-40"
+                disabled={dealStatus === 'completed' || isPreDealLocked || !newMessage.trim()}
+                className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00F2FE] to-[#00F2FE] flex items-center justify-center text-black font-extrabold hover:scale-105 active:scale-95 transition-transform disabled:opacity-40 cursor-pointer"
               >
                 <Send className="w-4 h-4 fill-black" />
               </button>
@@ -462,6 +563,15 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Offer Preview Card Popup from Pre-Deal Chat */}
+      <OfferPreviewModal
+        isOpen={showOfferPreviewModal}
+        offer={bid}
+        request={request}
+        onClose={() => setShowOfferPreviewModal(false)}
+        onAccept={(acceptedBid) => handleAcceptOfferFromPreDeal(acceptedBid)}
+      />
 
       {/* Dispute Confirmation Modal */}
       {showDisputeConfirm && (

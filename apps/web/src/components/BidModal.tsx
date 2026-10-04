@@ -148,9 +148,11 @@ export const BidModal: React.FC<BidModalProps> = ({
                 <label className="block text-gray-300 font-semibold mb-2 text-[14px]">Предлагаемая цена ($ USD)</label>
                 <div className="relative">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, ''))}
                     className="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3.5 text-white text-xl font-extrabold pr-16 focus:border-cyan-400 outline-none"
                   />
                   <span className="absolute right-4 top-4 text-cyan-400 font-bold text-[15px]">USD</span>

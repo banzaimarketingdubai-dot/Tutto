@@ -266,9 +266,11 @@ export const CreateMarketListingModal: React.FC<CreateMarketListingModalProps> =
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-gray-500 font-bold">$</span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={oldPrice}
-                onChange={(e) => setOldPrice(e.target.value)}
+                onChange={(e) => setOldPrice(e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, ''))}
                 className="w-full bg-[#070B12] border border-white/15 rounded-xl pl-7 pr-3 py-2 text-xs text-gray-300 line-through focus:border-[#00F2FE] outline-none"
               />
             </div>
@@ -288,10 +290,12 @@ export const CreateMarketListingModal: React.FC<CreateMarketListingModalProps> =
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-[#00F2FE] font-black">$</span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, ''))}
                 className="w-full bg-[#070B12] border border-[#00F2FE]/50 rounded-xl pl-7 pr-3 py-2 text-xs text-white font-extrabold focus:border-[#00F2FE] outline-none shadow-[0_0_10px_rgba(0,242,254,0.2)]"
               />
             </div>

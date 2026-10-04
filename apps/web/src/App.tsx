@@ -60,6 +60,7 @@ export function App() {
   // In-App Deal Chat State
   const [activeDealRequest, setActiveDealRequest] = useState<RequestItem | null>(null)
   const [activeDealBid, setActiveDealBid] = useState<BidItem | null>(null)
+  const [isPreDealChat, setIsPreDealChat] = useState(false)
   const [isAdminDisputeOpen, setIsAdminDisputeOpen] = useState(false)
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false)
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null)
@@ -566,9 +567,10 @@ export function App() {
             <MyDealsAndListingsView
               myRequests={requests}
               myMarketItems={marketProducts}
-              onOpenDealChat={(req, bid) => {
+              onOpenDealChat={(req, bid, isPreDeal = false) => {
                 setActiveDealRequest(req)
                 setActiveDealBid(bid)
+                setIsPreDealChat(isPreDeal)
               }}
               onOpenMarketItem={(item) => setSelectedMarketProduct(item)}
               onDeleteMarketItem={(itemId) => {
@@ -636,18 +638,23 @@ export function App() {
           isOpen={Boolean(activeDealRequest && activeDealBid)}
           request={activeDealRequest}
           bid={activeDealBid}
+          isPreDeal={isPreDealChat}
           currentUserRole={activeDealRequest?.clientId === 'usr-current' ? 'client' : 'provider'}
           onClose={() => {
             setActiveDealRequest(null)
             setActiveDealBid(null)
+            setIsPreDealChat(false)
+          }}
+          onAcceptOffer={(acceptedBid) => {
+            setIsPreDealChat(false)
+            setNotificationMsg(`🎉 Оффер от ${acceptedBid.providerName} принят!`)
+            setTimeout(() => setNotificationMsg(null), 3000)
           }}
           onCompleteDeal={() => {
-            setNotificationMsg('🎉 Сделка завершена! Открыто окно отзыва.')
+            setNotificationMsg('🎉 Сделка завершена! Отрыто окно отзыва.')
             setTimeout(() => setNotificationMsg(null), 4000)
           }}
           onNewMessage={(msg) => {
-            // Increment unread count if we are not actively viewing the chat tab
-            // For testing: we can just increment it to verify the badge works
             setUnreadChatCount((prev) => prev + 1)
           }}
         />

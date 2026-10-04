@@ -86,10 +86,12 @@ export const OfferInstancesManager: React.FC = () => {
 
           <div className="flex gap-2">
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               placeholder="Цена"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, ''))}
               className="w-1/3 bg-black border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-cyan-400"
             />
             <textarea
