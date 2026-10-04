@@ -639,7 +639,7 @@ export function App() {
           request={activeDealRequest}
           bid={activeDealBid}
           isPreDeal={isPreDealChat}
-          currentUserRole={activeDealRequest?.clientId === 'usr-current' ? 'client' : 'provider'}
+          currentUserRole="client"
           onClose={() => {
             setActiveDealRequest(null)
             setActiveDealBid(null)

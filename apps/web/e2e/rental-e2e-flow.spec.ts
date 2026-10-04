@@ -23,15 +23,14 @@ test.describe('Rental Niche E2E Flows (Transport & Real Estate)', () => {
     await expect(fabButton).toBeVisible({ timeout: 10000 })
     await fabButton.click({ force: true })
 
-    // Select 'Создать заявку (ИИ / Ручной)'
-    const createActionBtn = page.locator('button').filter({ hasText: /Создать заявку|Запрос/i }).first()
-    if (await createActionBtn.isVisible()) {
-      await createActionBtn.click({ force: true })
-    }
+    // Select 'Заявку (ИИ-Ассистент)' from action sheet
+    const createActionBtn = page.locator('button').filter({ hasText: /Заявку \(ИИ-Ассистент\)|Заявку/i }).first()
+    await expect(createActionBtn).toBeVisible({ timeout: 5000 })
+    await createActionBtn.click({ force: true })
 
-    // Skip AI to manual CreateRequestModal if AI modal opened
-    const skipToManualBtn = page.locator('button').filter({ hasText: /Ручной ввод|Обычное создание|Пропустить/i }).first()
-    if (await skipToManualBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    // Click 'Пропустить ИИ (Ручной ввод)' if AIAssistantModal opened
+    const skipToManualBtn = page.locator('button').filter({ hasText: /Пропустить ИИ|Ручной ввод|Обычное/i }).first()
+    if (await skipToManualBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
       await skipToManualBtn.click({ force: true })
     }
 
