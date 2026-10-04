@@ -7,7 +7,7 @@ export async function injectTelegramMock(page: Page) {
       WebApp: {
         initData: 'query_id=AA...',
         initDataUnsafe: {
-          user: { id: 123456, first_name: 'Sherlock', last_name: 'Test' },
+          user: { id: 123456, first_name: 'Sherlock', last_name: 'Test', username: 'sherlock_dev' },
         },
         colorScheme: 'dark',
         themeParams: {

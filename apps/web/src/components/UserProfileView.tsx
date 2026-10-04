@@ -33,6 +33,7 @@ import { FinanceView } from './FinanceView'
 import { TokenWalletModal } from './TokenWalletModal'
 import { useTokenBalance } from '../lib/balance'
 import { supabase } from '../lib/supabase'
+import { getUnifiedProfile, unlinkEmail, unlinkTelegram } from '../lib/accountSync'
 
 interface UserProfileViewProps {
   session?: any
@@ -41,10 +42,11 @@ interface UserProfileViewProps {
 }
 
 export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpenAdmin, onOpenAuth }) => {
-  const telegramUser = getTelegramUser()
   const isTMA = isTelegramEnvironment()
-  const supabaseEmail = session?.user?.email
+  const telegramUser = getTelegramUser()
+  const unified = getUnifiedProfile(session)
 
+  const supabaseEmail = session?.user?.email
   const bizCard = MOCK_BUSINESS_CARDS.find(c => c.ownerEmail === supabaseEmail) || MOCK_BUSINESS_CARDS[0]
 
   const [activeSection, setActiveSection] = useState<'hub' | 'business' | 'ai' | 'finance'>('hub')
@@ -52,51 +54,33 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const [isWalletOpen, setIsWalletOpen] = useState(false)
   const [tokenBalance] = useTokenBalance()
 
-  // Real Auth Linkage Detection
-  const savedTgUsername = localStorage.getItem('tutto_tg_username')
-  const savedTgName = localStorage.getItem('tutto_tg_name')
-
-  const isTelegramLinked = Boolean(telegramUser?.id || isTMA || savedTgUsername || localStorage.getItem('tutto_tg_linked') === 'true')
-  const activeEmail = supabaseEmail || (localStorage.getItem('tutto_email_linked') === 'true' ? (localStorage.getItem('tutto_user_email') || 'user@gmail.com') : null)
-  const isEmailLinked = Boolean(activeEmail)
-
-  // Determine synced initial name and avatar
-  const googleName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name
-  const googleAvatar = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture
-
-  const defaultInitialName =
-    googleName ||
-    (telegramUser?.first_name ? `${telegramUser.first_name}${telegramUser.last_name ? ' ' + telegramUser.last_name : ''}` : null) ||
-    savedTgName ||
-    (supabaseEmail ? supabaseEmail.split('@')[0] : 'Александр Иванов')
-
-  const defaultInitialAvatar =
-    googleAvatar ||
-    telegramUser?.photo_url ||
-    bizCard.logoUrl ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'
+  const isTelegramLinked = unified.isTelegramLinked
+  const isEmailLinked = unified.isEmailLinked
+  const activeEmail = unified.email
 
   const [profileName, setProfileName] = useState<string>(
-    () => localStorage.getItem('tutto_profile_name') || defaultInitialName
+    () => localStorage.getItem('tutto_profile_name') || unified.profileName
   )
   const [profileAvatar, setProfileAvatar] = useState<string>(
-    () => localStorage.getItem('tutto_profile_avatar') || defaultInitialAvatar
+    () => localStorage.getItem('tutto_profile_avatar') || unified.profileAvatar
   )
 
-  // Sync profile when Google OAuth session logs in or updates
+  // Listen for reactive profile sync events
   useEffect(() => {
-    if (session?.user) {
-      if (googleName) {
-        setProfileName(googleName)
-        localStorage.setItem('tutto_profile_name', googleName)
-      }
-      if (googleAvatar) {
-        setProfileAvatar(googleAvatar)
-        localStorage.setItem('tutto_profile_avatar', googleAvatar)
-      }
-      window.dispatchEvent(new Event('tutto-profile-updated'))
+    const syncProfile = () => {
+      const updated = getUnifiedProfile(session)
+      setProfileName(localStorage.getItem('tutto_profile_name') || updated.profileName)
+      setProfileAvatar(localStorage.getItem('tutto_profile_avatar') || updated.profileAvatar)
     }
-  }, [session, googleName, googleAvatar])
+
+    syncProfile()
+    window.addEventListener('tutto-profile-updated', syncProfile)
+    window.addEventListener('storage', syncProfile)
+    return () => {
+      window.removeEventListener('tutto-profile-updated', syncProfile)
+      window.removeEventListener('storage', syncProfile)
+    }
+  }, [session])
 
   // Profile Edit Modal State
   const [isEditingProfile, setIsEditingProfile] = useState(false)
@@ -131,6 +115,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     setProfileAvatar(tempAvatar)
     localStorage.setItem('tutto_profile_name', trimmed)
     localStorage.setItem('tutto_profile_avatar', tempAvatar)
+    localStorage.setItem('tutto_profile_custom_avatar', tempAvatar)
     window.dispatchEvent(new Event('tutto-profile-updated'))
     setIsEditingProfile(false)
     triggerNotificationFeedback('success')
@@ -141,11 +126,8 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
     triggerHapticFeedback('medium')
     try {
       await supabase.auth.signOut()
-      localStorage.removeItem('tutto_email_linked')
-      localStorage.removeItem('tutto_user_email')
-      localStorage.removeItem('tutto_profile_name')
-      localStorage.removeItem('tutto_profile_avatar')
-      window.dispatchEvent(new Event('tutto-profile-updated'))
+      unlinkEmail()
+      localStorage.removeItem('tutto_profile_custom_avatar')
       triggerNotificationFeedback('success')
     } catch (err) {
       console.error('Error signing out', err)
@@ -154,7 +136,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
 
   const handleConnectTelegram = () => {
     triggerHapticFeedback('light')
-    const userEmailOrId = supabaseEmail || localStorage.getItem('tutto_user_email') || 'web_user'
+    const userEmailOrId = activeEmail || 'web_user'
     const botLink = `https://t.me/tuttominutto_bot?start=link_${encodeURIComponent(userEmailOrId)}`
     window.open(botLink, '_blank')
     localStorage.setItem('tutto_tg_linked', 'true')
@@ -178,13 +160,21 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const trustPercentage = verifiedCount * 50
 
   const displayTelegramHandle =
-    savedTgUsername
-      ? `@${savedTgUsername}`
-      : telegramUser?.username
-      ? `@${telegramUser.username}`
-      : telegramUser?.first_name
-      ? `${telegramUser.first_name} ${telegramUser.last_name || ''}`
-      : savedTgName || (isTMA ? 'Telegram WebApp Authed' : 'Не привязан к профилю')
+    unified.telegramUsername
+      ? `@${unified.telegramUsername}`
+      : unified.telegramName
+      ? unified.telegramName
+      : isTMA
+      ? 'Telegram WebApp Authed'
+      : isTelegramLinked
+      ? 'Привязан к профилю'
+      : 'Не привязан к профилю'
+
+  const handleUnlinkTelegram = () => {
+    triggerHapticFeedback('medium')
+    unlinkTelegram()
+    triggerNotificationFeedback('success')
+  }
 
   return (
     <div className="space-y-5 pb-20 animate-fadeIn text-xs relative">
@@ -264,15 +254,25 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
             </div>
 
             {isTelegramLinked ? (
-              <a
-                href="https://t.me/tuttominutto_bot"
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-400 font-bold text-[10px] flex items-center gap-1 border border-white/10 transition-colors"
-              >
-                <span>Бот ТГ</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-center gap-1.5">
+                <a
+                  href="https://t.me/tuttominutto_bot"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-400 font-bold text-[10px] flex items-center gap-1 border border-white/10 transition-colors"
+                >
+                  <span>Бот ТГ</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <button
+                  onClick={handleUnlinkTelegram}
+                  className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[10px] border border-rose-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Отвязать Telegram аккаунт"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Отвязать</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={handleConnectTelegram}

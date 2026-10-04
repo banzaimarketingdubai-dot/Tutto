@@ -144,13 +144,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* User Avatar Picto with Notification Badge */}
-            <div
+            <button
+              type="button"
+              data-testid="notifications-bell"
               onClick={() => {
                 triggerHapticFeedback('light')
                 if (onOpenNotifications) onOpenNotifications()
               }}
-              className="relative shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
-              title="Уведомления и профиль"
+              className="relative shrink-0 cursor-pointer hover:opacity-85 transition-opacity bg-transparent border-0 p-0"
+              title="уведомления"
             >
               <img
                 src={profileAvatar}
@@ -174,7 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   mode === 'services' ? 'bg-[#CCFF00]' : 'bg-[#00F2FE]'
                 }`}
               />
-            </div>
+            </button>
           </div>
         </div>
 

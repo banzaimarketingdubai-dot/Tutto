@@ -22,8 +22,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [error, setError] = useState('')
 
 
-  // ✅ TMA Auto-Auth: если мы внутри Telegram Mini App — авторизация уже есть через initData.
-  // Вызываем onSuccess немедленно, не показывая никакой формы.
+  // ✅ TMA Auto-Auth: если мы внутри Telegram Mini App и есть данные пользователя — вызываем onSuccess немедленно.
+  // Если данных нет (прямая ссылка / кэш) — показываем AuthModal с возможностью авторизации через Бот.
   useEffect(() => {
     if (isOpen && isTelegramEnvironment()) {
       const tgUser = getTelegramUser()
@@ -35,7 +35,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   }, [isOpen])
 
   if (!isOpen) return null
-  if (isTelegramEnvironment()) return null
+  const isTmaWithoutUser = isTelegramEnvironment() && !getTelegramUser()
+  if (isTelegramEnvironment() && !isTmaWithoutUser) return null
 
   // Браузерная авторизация (не ТМА) — Google OAuth + Email Magic Link
   const handleGoogleLogin = async () => {
@@ -81,6 +82,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   }
 
+  const handleTelegramLogin = () => {
+    triggerHapticFeedback('medium')
+    const botAuthUrl = 'https://t.me/tuttominutto_bot?start=auth_web'
+    window.open(botAuthUrl, '_blank')
+    localStorage.setItem('tutto_tg_linked', 'true')
+    window.dispatchEvent(new Event('tutto-profile-updated'))
+    onSuccess()
+    onClose()
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fadeIn">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -88,7 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       <div className="relative w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-slate-900 to-[#0A101D] border border-white/10 rounded-[32px] shadow-[0_0_50px_rgba(0,242,254,0.15)] animate-slideUp">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors z-10 cursor-pointer"
         >
           <X className="w-5 h-5 text-gray-400" />
         </button>
@@ -105,12 +116,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             {t(lang, 'auth_sub')}
           </p>
 
-          {/* Google Login */}
+          {/* Social Logins: Telegram & Google */}
           <div className="space-y-3 mb-8">
+            {/* Telegram Auth Button */}
+            <button
+              onClick={handleTelegramLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 bg-[#0088cc] hover:bg-[#0075b5] text-white py-3.5 px-4 rounded-xl font-bold transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(0,136,204,0.35)] cursor-pointer"
+            >
+              <MessageCircle className="w-5 h-5 text-white" />
+              <span>Войти через Telegram</span>
+            </button>
+
+            {/* Google Login */}
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-900 py-3.5 px-4 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-900 py-3.5 px-4 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -118,7 +140,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Продолжить с Google
+              <span>Продолжить с Google</span>
             </button>
           </div>
 

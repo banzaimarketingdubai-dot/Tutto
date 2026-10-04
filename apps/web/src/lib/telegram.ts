@@ -29,31 +29,14 @@ export const getTelegramUser = (): TelegramUser | null => {
   const savedTgId = localStorage.getItem('tutto_tg_id')
   if (savedTgUsername || savedTgId) {
     return {
-      id: parseInt(savedTgId || '999123456', 10),
-      first_name: localStorage.getItem('tutto_tg_name') || 'Пользователь',
+      id: parseInt(savedTgId || '0', 10),
+      first_name: localStorage.getItem('tutto_tg_name') || 'Telegram Пользователь',
       username: savedTgUsername || '',
+      photo_url: localStorage.getItem('tutto_tg_photo') || undefined,
     }
   }
 
-  if (isTelegramEnvironment()) {
-    return {
-      id: 260669598,
-      first_name: 'Ihor',
-      last_name: 'Sherlock',
-      username: 'sherlockdxb',
-      language_code: 'ru',
-    }
-  }
-
-  // Mock User for Dev & Regular Browser Preview
-  return {
-    id: 999123456,
-    first_name: 'Александр',
-    last_name: 'Иванов',
-    username: 'alex_phuket',
-    language_code: 'ru',
-    photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  }
+  return null
 }
 
 export const getTelegramInitData = (): string => {

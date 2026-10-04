@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw, Volume2, Radio, Edit3 } from 'lucide-react'
+import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw, Volume2, Radio, Edit3, MapPin, Navigation } from 'lucide-react'
 import { analyzeRequestFlowWithAI, parseDeterministicRequest, ParsedRequest } from '../lib/gemini'
 import { triggerHapticFeedback, triggerNotificationFeedback, sendSuperadminErrorAlert } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
 import { useScrollLock } from '../hooks/useScrollLock'
+import { detectUserLocation } from '../lib/geo'
 
 interface AIAssistantModalProps {
   isOpen: boolean
