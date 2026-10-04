@@ -35,23 +35,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   }, [isOpen])
 
   if (!isOpen) return null
-
-  // Заглушка на случай гонки рендера в ТМА (мгновенно закроется через useEffect)
-  if (isTelegramEnvironment()) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fadeIn">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative w-full max-w-sm bg-gradient-to-b from-slate-900 to-[#0A101D] border border-[#00F2FE]/30 rounded-[32px] p-8 text-center shadow-[0_0_50px_rgba(0,242,254,0.15)]">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#0088cc]/30 to-[#00F2FE]/20 rounded-3xl flex items-center justify-center mb-5 mx-auto border border-[#0088cc]/40">
-            <MessageCircle className="w-8 h-8 text-[#0088cc]" />
-          </div>
-          <h2 className="text-xl font-black text-white mb-2">Авторизация Telegram</h2>
-          <p className="text-sm text-gray-400 mb-4">Вы авторизованы автоматически через Telegram.</p>
-          <div className="animate-pulse text-[#00F2FE] text-xs font-bold">Загрузка...</div>
-        </div>
-      </div>
-    )
-  }
+  if (isTelegramEnvironment()) return null
 
   // Браузерная авторизация (не ТМА) — Google OAuth + Email Magic Link
   const handleGoogleLogin = async () => {

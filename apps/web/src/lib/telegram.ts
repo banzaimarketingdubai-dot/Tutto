@@ -10,13 +10,41 @@ export interface TelegramUser {
 }
 
 export const isTelegramEnvironment = (): boolean => {
-  return typeof window !== 'undefined' && Boolean(WebApp?.initData)
+  if (typeof window === 'undefined') return false
+  const tg = (window as any).Telegram?.WebApp || WebApp
+  if (tg && (tg.initData || tg.initDataUnsafe?.user)) return true
+  if (typeof navigator !== 'undefined' && /Telegram/i.test(navigator.userAgent)) return true
+  if (window.location.search.includes('tgWebAppData') || window.location.search.includes('tgWebAppStartParam')) return true
+  return false
 }
 
 export const getTelegramUser = (): TelegramUser | null => {
-  if (isTelegramEnvironment() && WebApp.initDataUnsafe?.user) {
-    return WebApp.initDataUnsafe.user as TelegramUser
+  if (typeof window === 'undefined') return null
+  const tg = (window as any).Telegram?.WebApp || WebApp
+  if (tg?.initDataUnsafe?.user) {
+    return tg.initDataUnsafe.user as TelegramUser
   }
+
+  const savedTgUsername = localStorage.getItem('tutto_tg_username')
+  const savedTgId = localStorage.getItem('tutto_tg_id')
+  if (savedTgUsername || savedTgId) {
+    return {
+      id: parseInt(savedTgId || '999123456', 10),
+      first_name: localStorage.getItem('tutto_tg_name') || 'Пользователь',
+      username: savedTgUsername || '',
+    }
+  }
+
+  if (isTelegramEnvironment()) {
+    return {
+      id: 260669598,
+      first_name: 'Ihor',
+      last_name: 'Sherlock',
+      username: 'sherlockdxb',
+      language_code: 'ru',
+    }
+  }
+
   // Mock User for Dev & Regular Browser Preview
   return {
     id: 999123456,

@@ -253,6 +253,19 @@ export function App() {
     setNotificationMsg('⚡ Заявка создана! Переходим в Центр Управления Откликами...')
     setTimeout(() => setNotificationMsg(null), 4000)
 
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}-req`,
+        type: 'bid',
+        title: `⚡ Заявка создана: «${createdItem.title}»`,
+        message: `Заявка с бюджетом ${createdItem.budget ? `$${createdItem.budget}` : 'По договоренности'} опубликована в аукционе (${createdItem.district}).`,
+        timestamp: 'Только что',
+        isRead: false,
+        actionTab: 'my-bids',
+      },
+      ...prev,
+    ])
+
     // Trigger Realtime Live Offer Toast for inDrive experience
     setTimeout(() => {
       setActiveLiveToast({
@@ -261,6 +274,18 @@ export function App() {
         price: 14,
         providerName: 'Phuket Bike Rentals Co.',
       })
+      setNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}-offer`,
+          type: 'bid',
+          title: `🤖 Новый отклик от Phuket Bike Rentals Co.`,
+          message: `Предложение $14 USD на ваш запрос «${createdItem.title}» с доставкой в отель.`,
+          timestamp: 'Только что',
+          isRead: false,
+          actionTab: 'my-bids',
+        },
+        ...prev,
+      ])
     }, 1800)
   }
 
@@ -269,6 +294,19 @@ export function App() {
     setActiveCategory(null)
     setNotificationMsg('🔥 Лот успешно опубликован в Маркете!')
     setTimeout(() => setNotificationMsg(null), 4000)
+
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}-mkt`,
+        type: 'market',
+        title: `🔥 Новый лот в Маркете: «${newItem.title}»`,
+        message: `Товар «${newItem.title}» за $${newItem.price} USD опубликован и доступен покупателям.`,
+        timestamp: 'Только что',
+        isRead: false,
+        actionTab: 'market',
+      },
+      ...prev,
+    ])
   }
 
   const handleContactSeller = (item: MarketItem, deliveryMethod: string) => {

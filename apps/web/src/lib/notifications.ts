@@ -9,43 +9,7 @@ export interface NotificationItem {
   actionData?: any
 }
 
-export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    type: 'bid',
-    title: '🤖 Новый ИИ-отклик от Ayana Resort',
-    message: 'Предложение $220 USD на ваш запрос «НУЖЕН БАЙК NMAX» в районе Patong.',
-    timestamp: '2 мин назад',
-    isRead: false,
-    actionTab: 'my-bids',
-  },
-  {
-    id: 'notif-2',
-    type: 'urgent',
-    title: '⚡ Срочная заявка в вашем районе (Rawai)',
-    message: 'Клиент ищет Виллу с бассейном на 3 дня ($250/сут). Откликнитесь первыми!',
-    timestamp: '15 мин назад',
-    isRead: false,
-    actionTab: 'home',
-  },
-  {
-    id: 'notif-3',
-    type: 'reward',
-    title: '🪙 Начислено +15 TUTTO Coins',
-    message: 'Спасибо за ваш отзыв об исполнителе! Монеты зачислены на баланс кошелька.',
-    timestamp: '1 час назад',
-    isRead: true,
-  },
-  {
-    id: 'notif-4',
-    type: 'market',
-    title: '🔥 Горящее предложение в Маркете',
-    message: 'Скидка 40% на «Шлем Shoei Neotec II» в районе Chalong. Осталось 2 часа!',
-    timestamp: '3 часа назад',
-    isRead: true,
-    actionTab: 'market',
-  },
-]
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = []
 
 /**
  * Web Push Notification Helpers (Browser Native Notification API)
