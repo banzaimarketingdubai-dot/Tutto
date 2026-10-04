@@ -41,16 +41,26 @@ bot.command('start', async (ctx: Context) => {
       const cleanParam = startParam.trim()
 
       if (cleanParam.startsWith('link_') || cleanParam.startsWith('bind_') || cleanParam.startsWith('auth_')) {
-        const emailOrId = decodeURIComponent(cleanParam.replace(/^(link_|bind_|auth_)/, ''))
+        const rawEnc = cleanParam.replace(/^(link_|bind_|auth_)/, '')
+        const emailOrId = decodeURIComponent(rawEnc)
+          .replace(/_at_/g, '@')
+          .replace(/_dot_/g, '.')
         
-        const linkSuccessText = 
-          `🎉 <b>Аккаунты успешно объединены в единый профиль TuttoMinutto!</b>\n\n` +
-          `👤 <b>Telegram:</b> ${userName} (@${username || 'нет_юзернейма'}, ID: <code>${telegramId}</code>)\n` +
-          `📧 <b>Email / Google:</b> <code>${emailOrId}</code>\n\n` +
-          `Ваш аккаунт верифицирован на 100%. Все ваши заказы, отклики и баланс токенов объединены.\n` +
-          `Нажмите кнопку ниже, чтобы вернуться в веб-приложение:`
+        const fullName = [ctx.from?.first_name, ctx.from?.last_name].filter(Boolean).join(' ')
+        const userDisplayName = username
+          ? `@${username}`
+          : fullName
+          ? fullName
+          : `ID: ${telegramId}`
 
-        const returnDeepLink = `${appUrl}?startapp=linked_${encodeURIComponent(emailOrId)}&tg_id=${telegramId}&tg_username=${username}&tg_name=${encodeURIComponent(userName)}`
+        const linkSuccessText = 
+          `✅ <b>Авторизация и привязка аккаунта успешно завершена!</b>\n\n` +
+          `👤 <b>Telegram:</b> ${userDisplayName} (ID: <code>${telegramId}</code>)\n` +
+          `📧 <b>Объединен с:</b> <code>${emailOrId}</code>\n\n` +
+          `🎉 <b>Ваш аккаунт верифицирован на 100%!</b> Все ваши данные, заказы, отклики и баланс токенов объединены.\n\n` +
+          `💡 <i>Вы можете закрыть этот чат Telegram и вернуться в веб-приложение TuttoMinutto.</i>`
+
+        const returnDeepLink = `${appUrl}?startapp=linked_${encodeURIComponent(emailOrId)}&tg_id=${telegramId}&tg_username=${encodeURIComponent(username || '')}&tg_name=${encodeURIComponent(fullName || userName || '')}`
         
         const keyboard = new InlineKeyboard()
           .webApp('🚀 Открыть TuttoMinutto App', returnDeepLink)

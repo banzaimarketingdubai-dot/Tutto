@@ -153,7 +153,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const handleConnectTelegram = () => {
     triggerHapticFeedback('light')
     const userEmailOrId = activeEmail || 'web_user'
-    const botLink = `https://t.me/tuttominutto_bot?start=link_${encodeURIComponent(userEmailOrId)}`
+    // Telegram start params ONLY support [a-zA-Z0-9_-]{1,64}.
+    // We sanitize @ to _at_ and . to _dot_ so Telegram accepts the deep link!
+    const safeParam = userEmailOrId
+      .replace(/@/g, '_at_')
+      .replace(/\./g, '_dot_')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .substring(0, 50)
+
+    const botLink = `https://t.me/tuttominutto_bot?start=link_${safeParam}`
     window.open(botLink, '_blank')
     localStorage.setItem('tutto_tg_linked', 'true')
     window.dispatchEvent(new Event('tutto-profile-updated'))
@@ -180,6 +188,8 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
       ? `@${unified.telegramUsername}`
       : unified.telegramName
       ? unified.telegramName
+      : unified.telegramId
+      ? `ID: ${unified.telegramId}`
       : isTMA
       ? 'Telegram WebApp Authed'
       : isTelegramLinked
