@@ -1,6 +1,8 @@
 import React from 'react'
 import { X, Scale, FileText } from 'lucide-react'
 
+import { useScrollLock } from '../hooks/useScrollLock'
+
 interface PlatformRulesModalProps {
   isOpen: boolean
   onClose: () => void
@@ -12,7 +14,10 @@ export const PlatformRulesModal: React.FC<PlatformRulesModalProps> = ({
   onClose,
   type,
 }) => {
+  useScrollLock(isOpen)
+
   if (!isOpen) return null
+
 
   const userRules = (
     <div className="space-y-4 text-xs text-gray-300 leading-relaxed">
@@ -69,8 +74,8 @@ export const PlatformRulesModal: React.FC<PlatformRulesModalProps> = ({
   )
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-lg bg-[#0D1117] border border-cyan-500/40 rounded-3xl p-5 sm:p-6 shadow-[0_0_30px_rgba(0,242,254,0.15)] relative overflow-hidden max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn overscroll-contain">
+      <div className="w-full max-w-lg bg-[#0D1117] border border-cyan-500/40 rounded-3xl p-5 sm:p-6 shadow-[0_0_30px_rgba(0,242,254,0.15)] relative overflow-hidden max-h-[85dvh] flex flex-col overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 shrink-0">
           <div className="flex items-center gap-2">
@@ -88,7 +93,7 @@ export const PlatformRulesModal: React.FC<PlatformRulesModalProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto overscroll-contain mt-4 pr-2 custom-scrollbar">
           {type === 'user' ? userRules : businessRules}
         </div>
 

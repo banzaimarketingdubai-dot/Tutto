@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, ShieldCheck, CheckCircle2, AlertTriangle, Star, Clock, ChevronUp, ChevronDown, UserCheck, ShieldAlert, Award } from 'lucide-react'
 import { RequestItem, BidItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { supabase } from '../lib/supabase'
 import { ReviewModal } from './ReviewModal'
 import { sendBrowserPushNotification, playNotificationChime } from '../lib/notifications'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface DealChatModalProps {
   isOpen: boolean
@@ -35,6 +36,8 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
   onNewMessage,
   currentUserRole = 'client',
 }) => {
+  useScrollLock(isOpen)
+
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [dealStatus, setDealStatus] = useState<DealStatusType>('in_progress')
@@ -43,6 +46,14 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
   const [simulatedRole, setSimulatedRole] = useState<'client' | 'provider'>(currentUserRole)
   const [showDisputeConfirm, setShowDisputeConfirm] = useState(false)
   const [hideScamWarning, setHideScamWarning] = useState(() => localStorage.getItem('hide_scam_warning') === 'true')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (isOpen && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, isOpen])
+
 
   useEffect(() => {
     if (isOpen && request && bid) {
@@ -222,8 +233,8 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-        <div className="w-full sm:max-w-lg glass-panel rounded-t-3xl sm:rounded-3xl border border-[#00F2FE]/40 flex flex-col h-[92vh] sm:h-[85vh] overflow-hidden safe-area-bottom shadow-[0_0_40px_rgba(0,242,254,0.15)] relative">
+      <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn overscroll-contain">
+        <div className="w-full sm:max-w-lg glass-panel rounded-t-3xl sm:rounded-3xl border border-[#00F2FE]/40 flex flex-col h-[92dvh] sm:h-[85dvh] max-h-[92dvh] sm:max-h-[85dvh] overflow-hidden safe-area-bottom shadow-[0_0_40px_rgba(0,242,254,0.15)] relative overscroll-contain">
           
           {/* 1. Header: Opponent Info + Perspective Switcher + Close */}
           <div className="p-3.5 bg-[#161B22] border-b border-white/10 flex items-center justify-between shrink-0 relative z-20">
@@ -249,19 +260,9 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Perspective Role Switcher (For Demo & Testing) */}
-              <button
-                onClick={() => setSimulatedRole(simulatedRole === 'client' ? 'provider' : 'client')}
-                className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-[10px] font-bold text-cyan-300 flex items-center gap-1 transition-all"
-                title="Переключить роль для теста"
-              >
-                <UserCheck className="w-3 h-3 text-[#00F2FE]" />
-                <span>{simulatedRole === 'client' ? 'Роль: Клиент' : 'Роль: Бизнес'}</span>
-              </button>
-
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -325,7 +326,7 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
           </div>
 
           {/* 4. Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#070B12]/80">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#070B12]/80 overscroll-contain">
             {messages.map((msg) => {
               if (msg.senderRole === 'system') {
                 return (
@@ -392,6 +393,7 @@ export const DealChatModal: React.FC<DealChatModalProps> = ({
                 </div>
               );
             })}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* 5. Dynamic Role Action Bar (Липкий подвал действий) */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { X, MapPin, Search, ChevronRight } from 'lucide-react'
 import { triggerHapticFeedback } from '../lib/telegram'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface LocationSelectorModalProps {
   isOpen: boolean
@@ -24,7 +25,10 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
   currentDistrict,
   onSelect
 }) => {
+  useScrollLock(isOpen)
+
   const [step, setStep] = useState<1 | 2>(1)
+
   const [selectedHub, setSelectedHub] = useState<string>(currentHub)
   const [isOther, setIsOther] = useState(false)
   const [customDistrict, setCustomDistrict] = useState('')
@@ -62,10 +66,10 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+    <div className="fixed inset-0 z-[100] flex flex-col justify-end overscroll-contain">
       <div className="absolute inset-0 bg-[#050811]/80 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="bg-[#0D1117] w-full rounded-t-3xl border-t border-cyan-900/40 p-4 pb-8 flex flex-col gap-4 relative z-10 animate-slideUp max-h-[85vh]">
+      <div className="bg-[#0D1117] w-full rounded-t-3xl border-t border-cyan-900/40 p-4 pb-8 flex flex-col gap-4 relative z-10 animate-slideUp max-h-[85dvh] overscroll-contain">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-[18px] font-bold text-white flex items-center gap-2">
             <MapPin className="w-5 h-5 text-cyan-400" />

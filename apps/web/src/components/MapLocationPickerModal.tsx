@@ -12,6 +12,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
+import { useScrollLock } from '../hooks/useScrollLock'
+
 interface MapLocationPickerModalProps {
   isOpen: boolean
   onClose: () => void
@@ -39,7 +41,10 @@ export const MapLocationPickerModal: React.FC<MapLocationPickerModalProps> = ({
   initialLat = -8.4095, // Bali default
   initialLng = 115.1889,
 }) => {
+  useScrollLock(isOpen)
+
   const [position, setPosition] = useState<L.LatLng | null>(null)
+
 
   useEffect(() => {
     if (isOpen) {
@@ -57,7 +62,7 @@ export const MapLocationPickerModal: React.FC<MapLocationPickerModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md animate-fadeIn overscroll-contain">
       <div className="w-full h-full sm:w-[90vw] sm:h-[90vh] sm:max-w-3xl sm:rounded-3xl bg-slate-900 border border-white/10 flex flex-col relative overflow-hidden">
         
         {/* Header */}

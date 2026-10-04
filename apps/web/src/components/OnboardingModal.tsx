@@ -3,6 +3,7 @@ import { Sparkles, X, Check, Compass, MapPin, Bot, Clock, ArrowRight, LayoutTemp
 import { triggerHapticFeedback } from '../lib/telegram'
 import { OfferCard } from './OfferCard'
 import { MOCK_OFFER_INSTANCES } from '../data/mockData'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface OnboardingModalProps {
   isOpen: boolean
@@ -49,9 +50,12 @@ const ONBOARDING_STEPS = [
 ]
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) => {
+  useScrollLock(isOpen)
+
   const [currentStep, setCurrentStep] = useState(0)
 
   if (!isOpen) return null
+
 
   const stepData = ONBOARDING_STEPS[currentStep]
   const isLastStep = currentStep === ONBOARDING_STEPS.length - 1
@@ -76,7 +80,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
   return (
     <div
       onClick={handleNext}
-      className="fixed inset-0 z-[9999] flex flex-col justify-center items-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none cursor-pointer"
+      className="fixed inset-0 z-[9999] flex flex-col justify-center items-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none cursor-pointer overscroll-contain"
     >
       {/* Header bar: Skip Button */}
       <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-4 z-20">

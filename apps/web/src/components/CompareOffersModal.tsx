@@ -2,6 +2,7 @@ import React from 'react'
 import { X, Check, Star, ShieldCheck, Zap, Scale, DollarSign, Clock } from 'lucide-react'
 import { BidItem, RequestItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface CompareOffersModalProps {
   isOpen: boolean
@@ -20,7 +21,10 @@ export const CompareOffersModal: React.FC<CompareOffersModalProps> = ({
   onClose,
   onAcceptOffer,
 }) => {
+  useScrollLock(isOpen)
+
   if (!isOpen || !offerA || !offerB) return null
+
 
   const getFallbackPhoto = (reqTitle: string) => {
     const t = reqTitle.toLowerCase()
@@ -33,8 +37,8 @@ export const CompareOffersModal: React.FC<CompareOffersModalProps> = ({
   const photoB = (offerB as any).mediaUrl || getFallbackPhoto(request.title)
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#070B12] border border-cyan-500/40 rounded-3xl p-5 space-y-4 shadow-[0_0_40px_rgba(0,242,254,0.25)] relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[220] flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto overscroll-contain">
+      <div className="w-full max-w-lg bg-[#070B12] border border-cyan-500/40 rounded-3xl p-5 space-y-4 shadow-[0_0_40px_rgba(0,242,254,0.25)] relative max-h-[90dvh] overflow-y-auto overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">

@@ -1,15 +1,24 @@
 import { useEffect } from 'react'
 
-export const useScrollLock = (isLocked: boolean) => {
+let activeLocksCount = 0
+
+export const useScrollLock = (isLocked: boolean = true) => {
   useEffect(() => {
-    if (isLocked) {
+    if (!isLocked) return
+
+    activeLocksCount++
+    if (activeLocksCount === 1) {
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'hidden'
     }
 
     return () => {
-      document.body.style.overflow = 'unset'
+      activeLocksCount = Math.max(0, activeLocksCount - 1)
+      if (activeLocksCount === 0) {
+        document.body.style.overflow = ''
+        document.documentElement.style.overflow = ''
+      }
     }
   }, [isLocked])
 }
+

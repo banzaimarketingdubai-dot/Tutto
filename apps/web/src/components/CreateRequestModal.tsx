@@ -7,6 +7,7 @@ import { detectUserLocation, detectLocationFromCoords } from '../lib/geo'
 import { MapLocationPickerModal } from './MapLocationPickerModal'
 import { uploadUserPhoto } from '../lib/storage'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface CreateRequestModalProps {
   isOpen: boolean
@@ -23,8 +24,11 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   onCreateRequest,
   currentLang,
 }) => {
+  useScrollLock(isOpen)
+
   const lang = currentLang || detectDefaultLanguage()
   if (!isOpen) return null
+
 
   const activeHub = HUBS.find((h) => h.id === currentHub) || HUBS[0]
 
@@ -119,8 +123,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   const currentHubData = HUBS.find((h) => h.id === selectedHub) || HUBS[0]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="w-full sm:max-w-lg glass-panel rounded-t-3xl sm:rounded-3xl border border-white/10 p-5 overflow-y-auto max-h-[90vh] safe-area-bottom">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn overscroll-contain">
+      <div className="w-full sm:max-w-lg glass-panel rounded-t-3xl sm:rounded-3xl border border-white/10 p-5 overflow-y-auto max-h-[90dvh] safe-area-bottom overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
           <div className="flex items-center gap-2">

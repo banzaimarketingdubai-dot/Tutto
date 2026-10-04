@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react'
 import { X, Star, Sparkles, Coins, CheckCircle, Award, Image as ImageIcon, Video, Trash2, Info } from 'lucide-react'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { ReviewItem } from '../types'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface ReviewModalProps {
   isOpen: boolean
@@ -29,7 +30,10 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   onClose,
   onSubmitReview,
 }) => {
+  useScrollLock(isOpen)
+
   if (!isOpen) return null
+
 
   const [rating, setRating] = useState<number>(5)
   const [hoverRating, setHoverRating] = useState<number>(0)
@@ -90,8 +94,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-md bg-[#0D1117] border border-white/15 rounded-3xl p-6 shadow-2xl relative text-white max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn overscroll-contain">
+      <div className="w-full max-w-md bg-[#0D1117] border border-white/15 rounded-3xl p-6 shadow-2xl relative text-white max-h-[90dvh] flex flex-col overscroll-contain">
         {/* Background Glow */}
         <div className="absolute -top-20 -right-20 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -119,7 +123,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto custom-scrollbar pr-2 flex-1 pb-4">
+          <form onSubmit={handleSubmit} className="space-y-5 overflow-y-auto overscroll-contain custom-scrollbar pr-2 flex-1 pb-4">
             {/* Header Title */}
             <div className="text-center pt-2 shrink-0">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 text-xs font-bold mb-2">

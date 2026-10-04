@@ -5,6 +5,7 @@ import { HUBS } from '../data/mockData'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
 import { getCategoryBWCover, compressImageFile } from '../lib/imageCompressor'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface CreateMarketListingModalProps {
   isOpen: boolean
@@ -32,7 +33,9 @@ export const CreateMarketListingModal: React.FC<CreateMarketListingModalProps> =
   onCreateListing,
   currentLang,
 }) => {
+  useScrollLock(isOpen)
   const lang = currentLang || detectDefaultLanguage()
+
   const activeHubData = HUBS.find((h) => h.id === currentHub) || HUBS[0]
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -152,10 +155,10 @@ export const CreateMarketListingModal: React.FC<CreateMarketListingModalProps> =
   }
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn overscroll-contain">
       <form 
         onSubmit={handleSubmit}
-        className="w-full sm:max-w-lg glass-panel rounded-t-3xl sm:rounded-3xl border border-[#00F2FE]/40 p-5 space-y-4 overflow-y-auto max-h-[85vh] overscroll-contain safe-area-bottom shadow-[0_0_50px_rgba(0,242,254,0.15)] relative"
+        className="w-full sm:max-w-lg glass-panel rounded-t-3xl sm:rounded-3xl border border-[#00F2FE]/40 p-5 space-y-4 overflow-y-auto max-h-[85dvh] overscroll-contain safe-area-bottom shadow-[0_0_50px_rgba(0,242,254,0.15)] relative"
       >
         {/* Glow Background */}
         <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#00F2FE]/15 rounded-full blur-3xl pointer-events-none" />

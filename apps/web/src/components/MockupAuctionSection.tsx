@@ -314,7 +314,12 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
 
   let displayAuctionItems = combinedItems.filter((item) => {
     if (activeCategory && item.categoryL1Id && !item.id.includes('hero-')) {
-      if (item.categoryL1Id !== activeCategory) return false
+      const cat = item.categoryL1Id
+      const matches =
+        cat === activeCategory ||
+        ((activeCategory === 'cat-bikes' || activeCategory === 'cat-cars') && cat === 'cat-transport') ||
+        ((activeCategory === 'cat-villas' || activeCategory === 'cat-apartments') && (cat === 'cat-housing' || cat === 'cat-realestate'))
+      if (!matches) return false
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
@@ -412,15 +417,15 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
 
 function getMockBidsForRequest(req: RequestItem): BidItem[] {
   const t = req.title.toLowerCase()
-  if (t.includes('байк') || t.includes('скутер') || t.includes('nmax') || t.includes('pcx') || t.includes('прокат')) {
+  if (t.includes('байк') || t.includes('скутер') || t.includes('nmax') || t.includes('pcx') || t.includes('прокат') || t.includes('авто')) {
     return [
       {
         id: `bid-${req.id}-1`,
         requestId: req.id,
-        providerId: 'prov-1',
-        providerName: 'Phuket Bike Rentals Co.',
-        providerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-        providerRating: 4.98,
+        providerId: 'usr-0451611',
+        providerName: 'Ihor Sherlock Mobility (0451611@gmail.com)',
+        providerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+        providerRating: 5.0,
         isPro: true,
         isAiAgent: false,
         proposedPrice: req.budget && req.budget > 0 ? Math.max(10, Math.round(req.budget * 0.9)) : 14,
@@ -433,15 +438,15 @@ function getMockBidsForRequest(req: RequestItem): BidItem[] {
       {
         id: `bid-${req.id}-2`,
         requestId: req.id,
-        providerId: 'prov-2',
-        providerName: 'Rawai Moto Express',
-        providerAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
-        providerRating: 4.85,
+        providerId: 'usr-sherlockdxb',
+        providerName: 'Sherlock (@sherlockdxb)',
+        providerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        providerRating: 4.98,
         isPro: true,
         isAiAgent: true,
         proposedPrice: req.budget && req.budget > 0 ? req.budget : 16,
         currency: 'USD',
-        comment: 'Honda PCX 160cc в идеальном состоянии. Залог не нужен (копия паспорта). Встретим у отеля.',
+        comment: 'Honda PCX 160cc / Toyota Yaris в идеальном состоянии. Залог паспорта не нужен.',
         status: 'pending',
         createdAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
         mediaUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600&auto=format&fit=crop&q=80',
@@ -449,18 +454,18 @@ function getMockBidsForRequest(req: RequestItem): BidItem[] {
       {
         id: `bid-${req.id}-3`,
         requestId: req.id,
-        providerId: 'prov-3',
-        providerName: 'Ayana Luxury Mobility',
-        providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-        providerRating: 5.0,
+        providerId: 'usr-shershadow',
+        providerName: 'Shadow Capital Rentals (shershadowcapital@gmail.com)',
+        providerAvatar: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=100',
+        providerRating: 4.92,
         isPro: true,
         isAiAgent: false,
-        proposedPrice: req.budget && req.budget > 0 ? Math.round(req.budget * 1.1) : 20,
+        proposedPrice: req.budget && req.budget > 0 ? Math.round(req.budget * 1.05) : 20,
         currency: 'USD',
-        comment: 'Премиум выбор: NMAX Tech MAX 2024 года, держатель для смартфона, дождевики и полная страховка.',
+        comment: 'Премиум транспорт с полной страховкой KASKO и детским креслом по запросу.',
         status: 'pending',
         createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-        mediaUrl: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop&q=80',
+        mediaUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80',
       } as any,
     ]
   }
@@ -469,34 +474,34 @@ function getMockBidsForRequest(req: RequestItem): BidItem[] {
     {
       id: `bid-${req.id}-1`,
       requestId: req.id,
-      providerId: 'prov-gen-1',
-      providerName: 'BanzAI Pro Services',
-      providerAvatar: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=100',
-      providerRating: 4.99,
+      providerId: 'usr-sherlockdxb',
+      providerName: 'Sherlock Luxury Housing (@sherlockdxb)',
+      providerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+      providerRating: 4.98,
       isPro: true,
       isAiAgent: true,
-      proposedPrice: req.budget && req.budget > 0 ? req.budget : 45,
+      proposedPrice: req.budget && req.budget > 0 ? req.budget : 1500,
       currency: 'USD',
-      comment: 'Готовы выполнить вашу заявку быстро и на высшем уровне. Гарантия сервиса 100%.',
+      comment: 'Отличная 2-спальная вилла / кондо в районе ' + req.district + '. Скоростной Wi-Fi и бассейн.',
       status: 'pending',
       createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      mediaUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80',
+      mediaUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=600&auto=format&fit=crop&q=80',
     } as any,
     {
       id: `bid-${req.id}-2`,
       requestId: req.id,
-      providerId: 'prov-gen-2',
-      providerName: 'Phuket Direct Express',
-      providerAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
-      providerRating: 4.88,
+      providerId: 'usr-dubble',
+      providerName: 'Dubble Housing & Transport (dubble.ads@gmail.com)',
+      providerAvatar: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=100',
+      providerRating: 4.89,
       isPro: true,
       isAiAgent: false,
-      proposedPrice: req.budget && req.budget > 0 ? Math.round(req.budget * 0.9) : 40,
+      proposedPrice: req.budget && req.budget > 0 ? Math.round(req.budget * 0.95) : 1400,
       currency: 'USD',
-      comment: 'Отличные условия в районе ' + req.district + '. Выезд мастера/специалиста в течение 30 минут.',
+      comment: 'Уютные апартаменты / вилла у пляжа. Быстрое заселение и уборка 2 раза в неделю.',
       status: 'pending',
       createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-      mediaUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80',
+      mediaUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&auto=format&fit=crop&q=80',
     } as any,
   ]
 }

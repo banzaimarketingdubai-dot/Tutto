@@ -121,7 +121,7 @@ export interface MarketItem {
   image: string
   images?: string[]
   isCustomPhoto?: boolean
-  condition: 'Б/У' | 'Новое' | 'На запчасти'
+  condition: 'Б/У' | 'Новое' | 'На запчасти' | 'Аренда'
   category: string
 }
 

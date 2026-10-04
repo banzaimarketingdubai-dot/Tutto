@@ -3,6 +3,7 @@ import { X, Flame, MapPin, Clock, ShieldCheck, Truck, UserCheck, MessageSquare, 
 import { MarketItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { shareToTelegram } from '../lib/deeplink'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface MarketBuyModalProps {
   isOpen: boolean
@@ -17,8 +18,11 @@ export const MarketBuyModal: React.FC<MarketBuyModalProps> = ({
   onClose,
   onContactSeller,
 }) => {
+  useScrollLock(isOpen)
+
   const [deliveryMethod, setDeliveryMethod] = useState<'meetup' | 'courier'>('meetup')
   const [activePhotoIdx, setActivePhotoIdx] = useState(0)
+
 
   useEffect(() => {
     setActivePhotoIdx(0)

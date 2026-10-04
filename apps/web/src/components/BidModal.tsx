@@ -5,7 +5,9 @@ import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/teleg
 import { shareToTelegram } from '../lib/deeplink'
 import { OfferCard } from './OfferCard'
 import { MOCK_OFFER_INSTANCES } from '../data/mockData'
+import { useScrollLock } from '../hooks/useScrollLock'
 import { OfferInstance } from '../types'
+
 interface BidModalProps {
   request: RequestItem | null
   isOpen: boolean
@@ -19,6 +21,8 @@ export const BidModal: React.FC<BidModalProps> = ({
   onClose,
   onSubmitBid,
 }) => {
+  useScrollLock(isOpen)
+
   const [price, setPrice] = useState('180')
   const [comment, setComment] = useState('Готовы выполнить в лучшем виде. Доставим в течение 30 минут!')
   const [isClarifying, setIsClarifying] = useState(false)
@@ -34,16 +38,6 @@ export const BidModal: React.FC<BidModalProps> = ({
     }
   }, [request])
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
 
   if (!isOpen || !request) return null
 

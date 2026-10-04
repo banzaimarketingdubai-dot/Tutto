@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { X, Bell, CheckCheck, Sparkles, Volume2, VolumeX, MessageSquare, Zap, Coins, Flame, ArrowRight } from 'lucide-react'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
 import { NotificationItem, playNotificationChime, requestNotificationPermission, sendBrowserPushNotification } from '../lib/notifications'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface NotificationCenterModalProps {
   isOpen: boolean
@@ -18,7 +19,10 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   onMarkAllRead,
   onSelectNotification,
 }) => {
+  useScrollLock(isOpen)
+
   if (!isOpen) return null
+
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'bid' | 'market' | 'reward'>('all')
   const [soundEnabled, setSoundEnabled] = useState(true)
@@ -53,8 +57,8 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-md bg-[#0D1117] border border-white/15 rounded-3xl p-5 shadow-2xl relative text-white overflow-hidden max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn overscroll-contain">
+      <div className="w-full max-w-md bg-[#0D1117] border border-white/15 rounded-3xl p-5 shadow-2xl relative text-white overflow-hidden max-h-[85dvh] flex flex-col overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -168,7 +172,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         </div>
 
         {/* Notifications List Area */}
-        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+        <div className="flex-1 overflow-y-auto overscroll-contain space-y-2.5 pr-1">
           {filteredNotifications.length === 0 ? (
             <div className="p-8 text-center text-gray-500 text-xs">
               Уведомлений в данной категории пока нет

@@ -3,6 +3,7 @@ import { X, Mail, Zap, ShieldCheck, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { triggerHapticFeedback, isTelegramEnvironment, getTelegramUser } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -12,11 +13,14 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, currentLang }) => {
+  useScrollLock(isOpen)
+
   const lang = currentLang || detectDefaultLanguage()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+
 
   // ✅ TMA Auto-Auth: если мы внутри Telegram Mini App — авторизация уже есть через initData.
   // Вызываем onSuccess немедленно, не показывая никакой формы.

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { X, DollarSign, Send, Zap } from 'lucide-react'
 import { BidItem, RequestItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface CounterOfferModalProps {
   isOpen: boolean
@@ -18,7 +19,10 @@ export const CounterOfferModal: React.FC<CounterOfferModalProps> = ({
   onClose,
   onSubmitCounter,
 }) => {
+  useScrollLock(isOpen)
+
   if (!isOpen || !offer) return null
+
 
   const defaultCounterPrice = Math.max(1, Math.round(offer.proposedPrice * 0.9))
   const [customPrice, setCustomPrice] = useState<string>(String(defaultCounterPrice))
@@ -40,8 +44,8 @@ export const CounterOfferModal: React.FC<CounterOfferModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-sm bg-[#070B12] border border-cyan-500/50 rounded-3xl p-5 space-y-4 shadow-[0_0_40px_rgba(0,242,254,0.3)]">
+    <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn overscroll-contain">
+      <div className="w-full max-w-sm bg-[#070B12] border border-cyan-500/50 rounded-3xl p-5 space-y-4 shadow-[0_0_40px_rgba(0,242,254,0.3)] overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">

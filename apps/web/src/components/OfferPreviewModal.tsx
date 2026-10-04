@@ -2,6 +2,7 @@ import React from 'react'
 import { X, Check, ShieldCheck, Star, MapPin, Clock, MessageSquare, Sparkles, Share2, Award, Zap } from 'lucide-react'
 import { BidItem, RequestItem } from '../types'
 import { triggerHapticFeedback, triggerNotificationFeedback } from '../lib/telegram'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface OfferPreviewModalProps {
   isOpen: boolean
@@ -20,7 +21,10 @@ export const OfferPreviewModal: React.FC<OfferPreviewModalProps> = ({
   onAccept,
   onClarify,
 }) => {
+  useScrollLock(isOpen)
+
   if (!isOpen || !offer) return null
+
 
   const getFallbackPhoto = (reqTitle: string) => {
     const t = reqTitle.toLowerCase()
@@ -42,7 +46,7 @@ export const OfferPreviewModal: React.FC<OfferPreviewModalProps> = ({
   const photoUrl = (offer as any).mediaUrl || getFallbackPhoto(request.title)
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-[#050811] text-white animate-fadeIn font-sans overflow-y-auto">
+    <div className="fixed inset-0 z-[200] flex flex-col bg-[#050811] text-white animate-fadeIn font-sans overflow-y-auto overscroll-contain">
       {/* Background Image / Top Hero Cover */}
       <div className="relative w-full h-[45vh] min-h-[300px] shrink-0 overflow-hidden bg-slate-900">
         <img

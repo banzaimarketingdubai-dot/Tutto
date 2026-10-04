@@ -2,6 +2,8 @@ import React, { useEffect } from 'react'
 import { X, Sparkles, LayoutTemplate, PackagePlus, ArrowRight } from 'lucide-react'
 import { triggerHapticFeedback } from '../lib/telegram'
 
+import { useScrollLock } from '../hooks/useScrollLock'
+
 interface CreateActionSheetModalProps {
   isOpen: boolean
   onClose: () => void
@@ -13,15 +15,14 @@ export const CreateActionSheetModal: React.FC<CreateActionSheetModalProps> = ({
   onClose,
   onSelectAction
 }) => {
+  useScrollLock(isOpen)
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'
       triggerHapticFeedback('light')
-    } else {
-      document.body.style.overflow = 'unset'
     }
-    return () => { document.body.style.overflow = 'unset' }
   }, [isOpen])
+
 
   if (!isOpen) return null
 

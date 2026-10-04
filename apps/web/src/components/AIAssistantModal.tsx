@@ -3,6 +3,7 @@ import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, Ref
 import { analyzeRequestFlowWithAI, parseDeterministicRequest, ParsedRequest } from '../lib/gemini'
 import { triggerHapticFeedback, triggerNotificationFeedback, sendSuperadminErrorAlert } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
+import { useScrollLock } from '../hooks/useScrollLock'
 
 interface AIAssistantModalProps {
   isOpen: boolean
@@ -29,7 +30,9 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   initialPrompt,
   startVoice,
 }) => {
+  useScrollLock(isOpen)
   const lang = currentLang || detectDefaultLanguage()
+
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isRecording, setIsRecording] = useState(false)
@@ -214,7 +217,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#050811]/95 backdrop-blur-2xl animate-fadeIn font-sans">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#050811]/95 backdrop-blur-2xl animate-fadeIn font-sans overscroll-contain">
       {/* Dynamic Soundwave Animations CSS inline */}
       <style>{`
         @keyframes soundwave-bar {
@@ -262,7 +265,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 overscroll-contain">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex max-w-[85%] ${msg.role === 'user' ? 'self-end' : 'self-start'}`}>
             <div className={`p-3.5 rounded-2xl text-[15px] leading-snug ${
