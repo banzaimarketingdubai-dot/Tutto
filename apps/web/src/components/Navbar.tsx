@@ -48,9 +48,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [currentHubId, setCurrentHubId] = useState<string>('phuket')
   const [locationName, setLocationName] = useState<string>('Укажите локацию')
 
-  // Dynamically synced profile avatar
+  // Dynamically synced profile avatar with custom upload priority
   const [profileAvatar, setProfileAvatar] = useState<string>(() => {
     return (
+      localStorage.getItem('tutto_profile_custom_avatar') ||
       localStorage.getItem('tutto_profile_avatar') ||
       session?.user?.user_metadata?.avatar_url ||
       session?.user?.user_metadata?.picture ||
@@ -61,10 +62,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   useEffect(() => {
     const syncAvatar = () => {
+      const customAv = localStorage.getItem('tutto_profile_custom_avatar')
       const stored = localStorage.getItem('tutto_profile_avatar')
       const googleAv = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture
       const tgAv = telegramUser?.photo_url
-      setProfileAvatar(stored || googleAv || tgAv || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120')
+      setProfileAvatar(customAv || stored || googleAv || tgAv || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120')
     }
 
     syncAvatar()
