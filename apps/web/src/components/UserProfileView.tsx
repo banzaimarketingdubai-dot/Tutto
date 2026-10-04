@@ -39,9 +39,10 @@ interface UserProfileViewProps {
   session?: any
   onOpenAdmin?: () => void
   onOpenAuth?: () => void
+  onOpenTutorial?: () => void
 }
 
-export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpenAdmin, onOpenAuth }) => {
+export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpenAdmin, onOpenAuth, onOpenTutorial }) => {
   const isTMA = isTelegramEnvironment()
   const telegramUser = getTelegramUser()
   const unified = getUnifiedProfile(session)
@@ -53,6 +54,21 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
   const [isRulesOpen, setIsRulesOpen] = useState(false)
   const [isWalletOpen, setIsWalletOpen] = useState(false)
   const [tokenBalance] = useTokenBalance()
+
+  const [showTutorialOnStart, setShowTutorialOnStart] = useState<boolean>(
+    () => localStorage.getItem('needtnow_onboarding_completed') !== 'true'
+  )
+
+  const toggleShowTutorial = () => {
+    triggerHapticFeedback('medium')
+    const nextVal = !showTutorialOnStart
+    setShowTutorialOnStart(nextVal)
+    if (nextVal) {
+      localStorage.removeItem('needtnow_onboarding_completed')
+    } else {
+      localStorage.setItem('needtnow_onboarding_completed', 'true')
+    }
+  }
 
   const isTelegramLinked = unified.isTelegramLinked
   const isEmailLinked = unified.isEmailLinked
@@ -457,6 +473,48 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+      </div>
+
+      {/* Tutorial / Onboarding Test Mode Settings Card */}
+      <div className="glass-card p-4 border-cyan-500/30 bg-[#0D121D]/60 relative overflow-hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00F2FE]/20 to-[#CCFF00]/20 flex items-center justify-center border border-[#00F2FE]/40 text-[#00F2FE]">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white text-xs">Обучение платформы (Тест-режим)</h4>
+              <p className="text-[10px] text-gray-400">Настройки показа обучающих карточек и указателей</p>
+            </div>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={showTutorialOnStart}
+              onChange={toggleShowTutorial}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#00F2FE] peer-checked:to-[#CCFF00]" />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-between pt-1 border-t border-white/10">
+          <span className="text-[10px] text-gray-400">
+            {showTutorialOnStart ? '🟢 Обучение покажется при старте' : '⚪ Обучение скрыто (завершено)'}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              triggerHapticFeedback('heavy')
+              if (onOpenTutorial) onOpenTutorial()
+            }}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#00F2FE]/20 to-[#CCFF00]/20 border border-[#00F2FE]/40 text-[#00F2FE] hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1 shadow-[0_0_10px_rgba(0,242,254,0.2)]"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Пройти обучение</span>
           </button>
         </div>
       </div>

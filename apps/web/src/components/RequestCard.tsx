@@ -94,7 +94,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
             </div>
             <div className="text-[11px] text-gray-300 font-semibold mt-1 flex items-center gap-1">
               <Users className="w-3 h-3 text-[#00F2FE]" />
-              <span>{request.bidsCount || 12} Bidders</span>
+              <span>Откликов: {typeof request.bidsCount === 'number' ? request.bidsCount : 0}</span>
             </div>
           </div>
 

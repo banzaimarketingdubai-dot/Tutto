@@ -254,6 +254,18 @@ export function App() {
       else catId = 'cat-cleaning'
     }
 
+    const durationMins = newReq.auctionDurationMinutes 
+      ? parseInt(newReq.auctionDurationMinutes) 
+      : newReq.durationMinutes 
+      ? parseInt(newReq.durationMinutes) 
+      : newReq.auctionEndsAt 
+      ? Math.max(15, Math.round((new Date(newReq.auctionEndsAt).getTime() - Date.now()) / 60000))
+      : 120
+
+    const validDurationMins = durationMins > 0 ? durationMins : 120
+    const createdTime = new Date().toISOString()
+    const endsTime = newReq.auctionEndsAt || new Date(Date.now() + validDurationMins * 60 * 1000).toISOString()
+
     const createdItem: RequestItem = {
       id: `req-${Date.now()}`,
       clientId: 'usr-current',
@@ -273,9 +285,9 @@ export function App() {
         : [getNicheCoverImage(catName, newReq.title || '')],
       isFeatured: true,
       status: 'open',
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-      auctionEndsAt: new Date(Date.now() + (newReq.auctionDurationMinutes || 60) * 60 * 1000).toISOString(),
+      createdAt: createdTime,
+      expiresAt: endsTime,
+      auctionEndsAt: endsTime,
       bidsCount: 0,
     }
 
@@ -666,6 +678,7 @@ export function App() {
               session={session} 
               onOpenAdmin={() => setIsAdminDisputeOpen(true)} 
               onOpenAuth={() => setIsAuthOpen(true)}
+              onOpenTutorial={() => setIsOnboardingOpen(true)}
             />
           )}
         </main>

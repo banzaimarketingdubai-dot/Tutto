@@ -283,9 +283,13 @@ export const ClientOffersStream: React.FC<ClientOffersStreamProps> = ({
           })}
         </div>
       ) : (
-        <div className="p-4 bg-black/40 rounded-2xl border border-white/10 text-center space-y-1">
-          <p className="text-xs text-gray-400 font-medium">Нет активных входящих офферов.</p>
-          <p className="text-[11px] text-cyan-400">Ожидайте откликов от исполнителей в вашем районе...</p>
+        <div className="p-5 bg-gradient-to-b from-[#00F2FE]/15 via-slate-900/80 to-[#CCFF00]/10 rounded-2xl border border-[#00F2FE]/40 text-center space-y-1.5 shadow-[0_0_30px_rgba(0,242,254,0.3)] animate-pulse relative overflow-hidden">
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-[#00F2FE]/20 rounded-full blur-2xl pointer-events-none" />
+          <p className="text-xs font-bold text-gray-200 relative z-10">Нет активных входящих офферов.</p>
+          <p className="text-xs text-[#00F2FE] font-black tracking-wide relative z-10 flex items-center justify-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-ping" />
+            <span>Ожидаем откликов от исполнителей в вашем районе...</span>
+          </p>
         </div>
       )}
 

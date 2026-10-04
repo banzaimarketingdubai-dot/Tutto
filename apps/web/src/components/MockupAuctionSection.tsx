@@ -579,11 +579,18 @@ function AuctionRequestCard({ item, onOpenBidModal }: { item: RequestItem, onOpe
   const intentBadge = getIntentBadge(item.title, item.categoryL1Id)
 
   useEffect(() => {
-    // Generate a pseudo-random end time for the mockup, anywhere between 1 min and 60 mins from now
     const now = new Date().getTime()
-    const mockDurationMs = (Math.random() * 59 + 1) * 60 * 1000 // 1 to 60 mins
-    const endTime = now + mockDurationMs
-    const totalDuration = 60 * 60 * 1000 // Fixed scale of 60 mins
+    const endTime = item.auctionEndsAt
+      ? new Date(item.auctionEndsAt).getTime()
+      : item.expiresAt
+      ? new Date(item.expiresAt).getTime()
+      : now + 60 * 60 * 1000
+
+    const startTime = item.createdAt
+      ? new Date(item.createdAt).getTime()
+      : endTime - 60 * 60 * 1000
+
+    const totalDuration = Math.max(1000, endTime - startTime)
 
     const calculateTime = () => {
       const currentTime = new Date().getTime()
@@ -596,19 +603,23 @@ function AuctionRequestCard({ item, onOpenBidModal }: { item: RequestItem, onOpe
         return
       }
 
-      const minutes = Math.floor(diff / 60000)
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / 60000)
       const seconds = Math.floor((diff % 60000) / 1000)
-      const formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} МИН`
+      
+      const formatted = hours > 0
+        ? `${hours}ч. ${minutes}м.`
+        : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} МИН`
       
       setTimeLeftStr(formatted)
       setProgress(Math.max(0, Math.min(100, (diff / totalDuration) * 100)))
-      setIsUrgent(minutes < 10)
+      setIsUrgent(diff < 10 * 60 * 1000)
     }
 
     calculateTime()
     const int = setInterval(calculateTime, 1000)
     return () => clearInterval(int)
-  }, [])
+  }, [item.auctionEndsAt, item.expiresAt, item.createdAt])
 
   return (
     <div 
@@ -667,12 +678,13 @@ function AuctionRequestCard({ item, onOpenBidModal }: { item: RequestItem, onOpe
 
       <div className="pt-3 border-t border-cyan-950 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-1.5">
-          <div className="flex -space-x-2">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64" className="w-6 h-6 rounded-full border border-[#050811]" />
-            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=64" className="w-6 h-6 rounded-full border border-[#050811]" />
-          </div>
+          {item.bidsCount > 0 && (
+            <div className="flex -space-x-2">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64" className="w-5 h-5 rounded-full border border-[#050811]" />
+            </div>
+          )}
           <span className="text-[13px] font-semibold text-cyan-200">
-            ⚡ {item.bidsCount > 0 ? `Откликов: ${item.bidsCount}` : 'Анализируем...'}
+            ⚡ Откликов: {item.bidsCount || 0}
           </span>
         </div>
         
