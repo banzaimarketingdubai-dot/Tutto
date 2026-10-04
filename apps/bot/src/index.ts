@@ -19,75 +19,96 @@ interface CustomCategoryWizardState {
 
 const adminWizards: Record<number, CustomCategoryWizardState> = {}
 
+bot.catch((err) => {
+  console.error('[Telegram Bot Error]', err)
+  const ctx = err.ctx
+  ctx.reply('⚡ Произошла ошибка. Попробуйте нажать /start или открыть веб-приложение.').catch(() => {})
+})
+
 // ==========================================
 // 1. ONBOARDING, AUTH & ACCOUNT LINKING FLOWS
 // ==========================================
 
 bot.command('start', async (ctx: Context) => {
-  const startParam = ctx.match
-  const userName = ctx.from?.first_name || 'Пользователь'
-  const telegramId = ctx.from?.id
-  const username = ctx.from?.username || ''
+  try {
+    const startParam = ctx.match
+    const userName = ctx.from?.first_name || 'Пользователь'
+    const telegramId = ctx.from?.id
+    const username = ctx.from?.username || ''
 
-  // Handling Account Linking Deep Link (from Web App)
-  if (startParam && typeof startParam === 'string') {
-    if (startParam.startsWith('link_') || startParam.startsWith('bind_') || startParam.startsWith('auth_')) {
-      const emailOrId = decodeURIComponent(startParam.replace(/^(link_|bind_|auth_)/, ''))
-      
-      const linkSuccessText = 
-        `🎉 <b>Аккаунты успешно объединены в единый профиль TuttoMinutto!</b>\n\n` +
-        `👤 <b>Telegram:</b> ${userName} (@${username || 'нет_юзернейма'}, ID: <code>${telegramId}</code>)\n` +
-        `📧 <b>Email / Google:</b> <code>${emailOrId}</code>\n\n` +
-        `Ваш аккаунт верифицирован на 100%. Все ваши заказы, отклики и баланс токенов объединены.\n` +
-        `Нажмите кнопку ниже, чтобы вернуться в веб-приложение:`
+    // Handling Account Linking Deep Link (from Web App)
+    if (startParam && typeof startParam === 'string' && startParam.trim()) {
+      const cleanParam = startParam.trim()
 
-      const returnDeepLink = `${appUrl}?startapp=linked_${encodeURIComponent(emailOrId)}&tg_id=${telegramId}&tg_username=${username}&tg_name=${encodeURIComponent(userName)}`
-      
-      const keyboard = new InlineKeyboard()
-        .webApp('🚀 Открыть TuttoMinutto App', returnDeepLink)
-        .row()
-        .url('🌐 Вернуться в веб-версию', returnDeepLink)
+      if (cleanParam.startsWith('link_') || cleanParam.startsWith('bind_') || cleanParam.startsWith('auth_')) {
+        const emailOrId = decodeURIComponent(cleanParam.replace(/^(link_|bind_|auth_)/, ''))
+        
+        const linkSuccessText = 
+          `🎉 <b>Аккаунты успешно объединены в единый профиль TuttoMinutto!</b>\n\n` +
+          `👤 <b>Telegram:</b> ${userName} (@${username || 'нет_юзернейма'}, ID: <code>${telegramId}</code>)\n` +
+          `📧 <b>Email / Google:</b> <code>${emailOrId}</code>\n\n` +
+          `Ваш аккаунт верифицирован на 100%. Все ваши заказы, отклики и баланс токенов объединены.\n` +
+          `Нажмите кнопку ниже, чтобы вернуться в веб-приложение:`
 
-      await ctx.reply(linkSuccessText, {
+        const returnDeepLink = `${appUrl}?startapp=linked_${encodeURIComponent(emailOrId)}&tg_id=${telegramId}&tg_username=${username}&tg_name=${encodeURIComponent(userName)}`
+        
+        const keyboard = new InlineKeyboard()
+          .webApp('🚀 Открыть TuttoMinutto App', returnDeepLink)
+          .row()
+          .url('🌐 Вернуться в веб-версию', returnDeepLink)
+
+        await ctx.reply(linkSuccessText, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        })
+        return
+      }
+
+      if (cleanParam.startsWith('ref_')) {
+        const partnerId = cleanParam.split('_')[1]
+        await ctx.reply(`🎉 <b>Вы приглашены партнёром (ID: ${partnerId})!</b>\nВам начислен приветственный бонус.`, { parse_mode: 'HTML' })
+      }
+    }
+
+    // Interactive Onboarding JTBD
+    let welcomeText = `⚡️ <b>Tutto Minuto — где ищешь не ты, а тебя!</b>\n\n`
+    welcomeText += `Забудь про поиск по 20+ спам-чатам Пхукета и переплату 25% на Airbnb / Booking.\n\n`
+    welcomeText += `🛵 <b>Аренда транспорта:</b> Байки, авто, премиум-кары.\n`
+    welcomeText += `🏠 <b>Аренда жилья:</b> Кондо, апартаменты, виллы со срочными дисконтами от хозяев.\n\n`
+    welcomeText += `📍 <b>Как это работает:</b>\n\n`
+    welcomeText += `1️⃣ Зажми кнопку и надиктуй запрос за 5 секунд.\n\n`
+    welcomeText += `2️⃣ Проверенные собственники и прокаты района пришлют предложения с ценами и фото за 60 секунд.\n\n`
+    welcomeText += `3️⃣ Выбирай лучший вариант и связывайся напрямую!\n\n`
+    welcomeText += `🤝 <b>Для бизнеса:</b> Получайте горячие заказы прямо в Telegram без затрат на рекламу.\n\n`
+    welcomeText += `👇 <b>Какая цель вашего визита сегодня?</b>`
+
+    const keyboard = new InlineKeyboard()
+      .webApp('🚀 Открыть TuttoMinutto App', appUrl)
+      .row()
+      .text('🛍️ Ищу услуги/товары', 'onboard:customer')
+      .row()
+      .text('💼 Хочу зарабатывать (Бизнес)', 'onboard:business')
+
+    try {
+      await ctx.replyWithPhoto(
+        `${appUrl}/bot-welcome.png`,
+        {
+          caption: welcomeText,
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        }
+      )
+    } catch (imgErr) {
+      console.warn('[Telegram Bot] Failed to send photo, falling back to text reply:', imgErr)
+      await ctx.reply(welcomeText, {
         parse_mode: 'HTML',
         reply_markup: keyboard,
       })
-      return
     }
-
-    if (startParam.startsWith('ref_')) {
-      const partnerId = startParam.split('_')[1]
-      await ctx.reply(`🎉 *Вы приглашены партнёром (ID: ${partnerId})!*\nВам начислен приветственный бонус.`, { parse_mode: 'Markdown' })
-    } else {
-      await ctx.reply(`🎁 *Вы пришли по спец. ссылке:* \`${startParam}\``, { parse_mode: 'Markdown' })
-    }
+  } catch (err) {
+    console.error('[Telegram Bot] Error in /start command:', err)
+    await ctx.reply('⚡ Произошла ошибка. Попробуйте нажать /start снова.').catch(() => {})
   }
-
-  // Interactive Onboarding JTBD
-  let welcomeText = `⚡️ <b>Tutto Minuto — где ищешь не ты, а тебя!</b>\n\n`
-  welcomeText += `Забудь про поиск по 20+ спам-чатам Пхукета и переплату 25% на Airbnb / Booking.\n\n`
-  welcomeText += `🛵 <b>Аренда транспорта:</b> Байки, авто, премиум-кары.\n`
-  welcomeText += `🏠 <b>Аренда жилья:</b> Кондо, апартаменты, виллы со срочными дисконтами от хозяев.\n\n`
-  welcomeText += `📍 <b>Как это работает:</b>\n\n`
-  welcomeText += `1️⃣ Зажми кнопку и надиктуй запрос за 5 секунд.\n\n`
-  welcomeText += `2️⃣ Проверенные собственники и прокаты района пришлют предложения с ценами и фото за 60 секунд.\n\n`
-  welcomeText += `3️⃣ Выбирай лучший вариант и связывайся напрямую!\n\n`
-  welcomeText += `🤝 <b>Для бизнеса:</b> Получайте горячие заказы прямо в Telegram без затрат на рекламу.\n\n`
-  welcomeText += `👇 <b>Какая цель вашего визита сегодня?</b>`
-
-  const keyboard = new InlineKeyboard()
-    .text('🛍️ Ищу услуги/товары', 'onboard:customer')
-    .row()
-    .text('💼 Хочу зарабатывать (Бизнес)', 'onboard:business')
-
-  await ctx.replyWithPhoto(
-    `${appUrl}/bot-welcome.png`,
-    {
-      caption: welcomeText,
-      parse_mode: 'HTML',
-      reply_markup: keyboard,
-    }
-  )
 })
 
 // Customer Onboarding Path
@@ -218,7 +239,7 @@ bot.command(['keys', 'status'], async (ctx: Context) => {
     `• <a href="https://web-ten-hazel-65.vercel.app">https://web-ten-hazel-65.vercel.app</a>\n\n` +
     `⏰ <i>Время проверки: ${new Date().toLocaleString('ru-RU')}</i>`
 
-  await ctx.reply(text, { parse_mode: 'HTML', disable_web_page_preview: true })
+  await ctx.reply(text, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } })
 })
 
 // ==========================================
