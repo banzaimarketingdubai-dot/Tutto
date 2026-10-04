@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X, Mic, Send, Bot, Sparkles, Loader2, Check, Square, AlertTriangle, RefreshCw, Volume2, Radio, Edit3, MapPin, Navigation } from 'lucide-react'
-import { analyzeRequestFlowWithAI, parseDeterministicRequest, ParsedRequest } from '../lib/gemini'
+import { analyzeRequestFlowWithAI, parseDeterministicRequest, generateDataRecommendations, ParsedRequest } from '../lib/gemini'
 import { triggerHapticFeedback, triggerNotificationFeedback, sendSuperadminErrorAlert } from '../lib/telegram'
 import { Language, detectDefaultLanguage, t } from '../lib/i18n'
 import { useScrollLock } from '../hooks/useScrollLock'
-import { detectUserLocation } from '../lib/geo'
+import { detectUserLocation, validateHubAndDistrict } from '../lib/geo'
+import { HUBS } from '../data/mockData'
 
 interface AIAssistantModalProps {
   isOpen: boolean
@@ -172,7 +173,10 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     try {
       const response = await analyzeRequestFlowWithAI(updatedHistory, currentHub, currentDistrict)
 
-      if (response.status === 'clarify' && response.question) {
+      if (response.errorMsg) {
+        setAiError(response.errorMsg)
+        setMessages(prev => [...prev, { role: 'model', text: response.errorMsg as string }])
+      } else if (response.status === 'clarify' && response.question) {
         setMessages(prev => [...prev, { role: 'model', text: response.question as string }])
       } else if (response.status === 'complete' && response.requestParams) {
         setFinalCard(response.requestParams)
@@ -186,10 +190,11 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       }
     } catch (err: any) {
       console.error('AI Processing Error:', err)
-      const errorDetails = err?.message || 'Неизвестная ошибка ИИ API'
-      setAiError(errorDetails)
+      const overloadMsg = 'Приносим извинения, в данную секунду ИИ перегружен, повторите попытку через 30 сек или заполните карточку вручную'
+      setAiError(overloadMsg)
+      setMessages(prev => [...prev, { role: 'model', text: overloadMsg }])
 
-      sendSuperadminErrorAlert(errorDetails, err?.stack, 'AIAssistantModal executeUserSubmit')
+      sendSuperadminErrorAlert(err?.message || overloadMsg, err?.stack, 'AIAssistantModal executeUserSubmit')
 
       const fallbackRes = parseDeterministicRequest(updatedHistory, currentHub, currentDistrict)
       if (fallbackRes.requestParams) {
@@ -214,6 +219,13 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       setMessages(prev => [...prev, { role: 'model', text: '⚡ Карточка сформирована локальным алгоритмом.' }])
     }
   }
+
+  const userFullText = messages.map(m => m.text).join(' ')
+  const recommendations = finalCard ? generateDataRecommendations(finalCard, userFullText) : []
+
+  const activeHubObj = finalCard 
+    ? (HUBS.find(h => h.id === finalCard.hub) || HUBS.find(h => h.id === currentHub) || HUBS[0])
+    : (HUBS.find(h => h.id === currentHub) || HUBS[0])
 
   if (!isOpen) return null
 
@@ -339,35 +351,35 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           </div>
         )}
 
-        {/* Error Alert Box */}
+        {/* Polite AI Overload / Error Alert Box */}
         {aiError && (
-          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-white space-y-3 animate-fadeIn">
-            <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>Отчет об ошибке ИИ API</span>
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-white space-y-3 animate-fadeIn shadow-[0_0_20px_rgba(244,63,94,0.2)]">
+            <div className="flex items-center gap-2 text-rose-300 font-extrabold text-xs uppercase tracking-wider">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>Статус обработки ИИ</span>
             </div>
-            <p className="text-xs text-gray-300 font-mono bg-black/40 p-2 rounded-lg border border-white/5 overflow-x-auto">
-              {aiError}
+            <p className="text-xs text-rose-100 leading-relaxed font-semibold bg-black/40 p-3 rounded-xl border border-rose-500/30">
+              Приносим извинения, в данную секунду ИИ перегружен, повторите попытку через 30 сек или заполните карточку вручную.
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                onClick={handleApplyFallback}
-                className="flex-1 py-2 px-3 bg-[#00F2FE] text-black font-bold text-xs rounded-xl hover:brightness-110 flex items-center justify-center gap-1"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Сформировать карту (Фоллбэк)</span>
-              </button>
               {onSkipToManual && (
                 <button
                   onClick={() => {
+                    triggerHapticFeedback('heavy')
                     onClose()
                     onSkipToManual()
                   }}
-                  className="py-2 px-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/10"
+                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-xs rounded-xl shadow-[0_0_15px_rgba(0,242,254,0.4)] hover:brightness-110 flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  Заполнить вручную
+                  <span>Заполнить карточку вручную ➔</span>
                 </button>
               )}
+              <button
+                onClick={handleApplyFallback}
+                className="py-2.5 px-3 bg-white/10 hover:bg-white/20 text-cyan-300 font-bold text-xs rounded-xl border border-cyan-500/30 cursor-pointer"
+              >
+                Использовать черновик
+              </button>
             </div>
           </div>
         )}
@@ -398,6 +410,24 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                   <span>{isEditingCard ? 'Завершить редактирование' : 'Отредактировать'}</span>
                 </button>
               </div>
+
+              {/* Data Recommendations Block (When data is incomplete/vague) */}
+              {recommendations.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2 animate-fadeIn shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                  <div className="font-extrabold text-amber-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Что рекомендуется дополнить:</span>
+                  </div>
+                  <ul className="space-y-1.5 pl-1">
+                    {recommendations.map((rec, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-200 text-[13px] leading-snug">
+                        <span className="text-amber-400 font-bold shrink-0">•</span>
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {isEditingCard ? (
                 /* Editable Form Controls for JSON Block */
@@ -490,7 +520,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Hub (Гео) and District (Локация) */}
+                  {/* Hub (Гео) and District (Локация) strictly filtered via Geo Tree */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
@@ -498,15 +528,18 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                       </label>
                       <select
                         value={finalCard.hub || currentHub}
-                        onChange={e => updateFinalCard('hub', e.target.value)}
+                        onChange={e => {
+                          const newHub = e.target.value
+                          const validated = validateHubAndDistrict(newHub, finalCard.district, true)
+                          setFinalCard(prev => prev ? { ...prev, hub: validated.hub, district: validated.district } : null)
+                        }}
                         className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-xs focus:border-cyan-400 outline-none transition-all cursor-pointer"
                       >
-                        <option value="phuket" className="bg-[#0D1117]">🏝️ Пхукет (phuket)</option>
-                        <option value="bali" className="bg-[#0D1117]">🌺 Бали (bali)</option>
-                        <option value="dubai" className="bg-[#0D1117]">🏙️ Дубай (dubai)</option>
-                        <option value="phangan" className="bg-[#0D1117]">🌕 Панган (phangan)</option>
-                        <option value="samui" className="bg-[#0D1117]">🥥 Самуи (samui)</option>
-                        <option value="bangkok" className="bg-[#0D1117]">🏛️ Бангкок (bangkok)</option>
+                        {HUBS.map(h => (
+                          <option key={h.id} value={h.id} className="bg-[#0D1117]">
+                            {h.flag} {h.nameRu} ({h.id})
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -515,11 +548,11 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                         Локация (Район)
                       </label>
                       <select
-                        value={finalCard.district || currentDistrict}
+                        value={finalCard.district || activeHubObj.districts[0]}
                         onChange={e => updateFinalCard('district', e.target.value)}
                         className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-xs focus:border-cyan-400 outline-none transition-all cursor-pointer"
                       >
-                        {['Rawai', 'Patong', 'Chalong', 'Karon', 'Kamala', 'Bang Tao', 'Cherngtalay', 'Canggu', 'Seminyak', 'Ubud', 'Nusa Dua', 'Thonglor', 'Центр'].map(dist => (
+                        {activeHubObj.districts.map(dist => (
                           <option key={dist} value={dist} className="bg-[#0D1117] text-white">
                             📍 {dist}
                           </option>

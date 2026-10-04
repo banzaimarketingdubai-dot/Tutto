@@ -16,6 +16,27 @@ export const HUBS: HubLocation[] = [
     districts: ['Canggu', 'Seminyak', 'Ubud', 'Nusa Dua', 'Uluwatu', 'Sanur', 'Pererenan'],
   },
   {
+    id: 'dubai',
+    nameRu: 'Дубай',
+    nameEn: 'Dubai',
+    flag: '🇦🇪',
+    districts: ['Downtown', 'Marina', 'JBR', 'Palm Jumeirah', 'Business Bay', 'Deira'],
+  },
+  {
+    id: 'phangan',
+    nameRu: 'Панган',
+    nameEn: 'Koh Phangan',
+    flag: '🇹🇭',
+    districts: ['Haad Rin', 'Thong Sala', 'Srithanu', 'Chaloklum', 'Baan Tai'],
+  },
+  {
+    id: 'samui',
+    nameRu: 'Самуи',
+    nameEn: 'Koh Samui',
+    flag: '🇹🇭',
+    districts: ['Chaweng', 'Lamai', 'Bophut', 'Maenam', 'Choeng Mon'],
+  },
+  {
     id: 'bangkok',
     nameRu: 'Бангкок',
     nameEn: 'Bangkok',

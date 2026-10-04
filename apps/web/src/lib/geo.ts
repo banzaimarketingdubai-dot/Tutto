@@ -94,3 +94,57 @@ export function detectUserLocation(): Promise<DetectedLocationResult> {
     )
   })
 }
+
+export interface GeoPair {
+  hub: string
+  district: string
+}
+
+/**
+ * Validates Hub / District pair against the canonical HUBS Geo Tree.
+ * Prevents invalid cross-hub district assignments (e.g. Hub: Bali, District: Rawai).
+ */
+export function validateHubAndDistrict(rawHub: string, rawDistrict: string, userMentionedHubExplicitly = false): GeoPair {
+  const hubNormalized = (rawHub || 'phuket').toLowerCase().trim()
+  const districtNormalized = (rawDistrict || '').trim()
+
+  const currentHubObj = HUBS.find((h) => h.id === hubNormalized) || HUBS[0]
+
+  if (!districtNormalized) {
+    return { hub: currentHubObj.id, district: currentHubObj.districts[0] || 'Rawai' }
+  }
+
+  // 1. Check if district belongs to current hub
+  const matchedInCurrent = currentHubObj.districts.find(
+    (d) => d.toLowerCase() === districtNormalized.toLowerCase()
+  )
+  if (matchedInCurrent) {
+    return { hub: currentHubObj.id, district: matchedInCurrent }
+  }
+
+  // 2. District doesn't belong to current hub — search across all other hubs
+  const foundOtherHub = HUBS.find((h) =>
+    h.districts.some((d) => d.toLowerCase() === districtNormalized.toLowerCase())
+  )
+
+  if (foundOtherHub) {
+    const foundDistrict = foundOtherHub.districts.find(
+      (d) => d.toLowerCase() === districtNormalized.toLowerCase()
+    )!
+    if (!userMentionedHubExplicitly) {
+      // The user specified a district that uniquely belongs to another hub (e.g., Rawai -> Phuket)
+      // Switch hub to the correct hub!
+      return { hub: foundOtherHub.id, district: foundDistrict }
+    } else {
+      // User explicitly specified hub (e.g., Bali), so keep Bali and fallback to Bali's primary district (e.g., Canggu)
+      return { hub: currentHubObj.id, district: currentHubObj.districts[0] }
+    }
+  }
+
+  // 3. Fallback: keep hub, use its default district
+  return {
+    hub: currentHubObj.id,
+    district: currentHubObj.districts[0] || 'Rawai',
+  }
+}
+

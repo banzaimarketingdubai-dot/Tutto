@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { sendSuperadminErrorAlert } from './telegram'
+import { validateHubAndDistrict } from './geo'
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ''
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
@@ -21,6 +22,33 @@ export interface SmartAIResponse {
   question?: string
   requestParams?: ParsedRequest
   errorMsg?: string
+  recommendations?: string[]
+}
+
+export function generateDataRecommendations(req: ParsedRequest, rawUserText: string): string[] {
+  const recs: string[] = []
+  const text = (rawUserText || '').toLowerCase()
+
+  // 1. Budget Recommendation
+  if (req.budget === null || req.budget === undefined) {
+    recs.push('💰 Цена / Бюджет: укажите сумму или оставьте выбор за продавцами — предложения с бюджетом привлекают больше участников.')
+  }
+
+  // 2. Term / Duration Recommendation
+  if (!/(?:дней|дня|суток|месяц|недел|август|сентябр|октябр|ноябр|декабр|январ|феврал|март|апрел|май|июн|июл|завтра|сегодня|числа|дат)/i.test(text)) {
+    recs.push('📅 Срок и Даты: уточните на какой период вам необходима услуга (например: "на 7 дней с завтрашнего дня").')
+  }
+
+  // 3. Category Specifics Recommendation
+  if (req.categoryName === 'ПРОКАТ' && !/(?:nmax|pcx|click|forza|yaris|fortuner|vespa|байк|скутер|авто|машина)/i.test(text)) {
+    recs.push('🛵 Модель техники: укажите конкретную модель или объем двигателя (например: Yamaha NMAX 155cc или Toyota Yaris).')
+  } else if (req.categoryName === 'ЖИЛЬЁ' && !/(?:спальн|комнат|вилл|кондо|апарт|студи|бассейн)/i.test(text)) {
+    recs.push('🏡 Формат жилья: добавьте кол-во спален и предпочтения (например: вилла с бассейном, 2 спальни).')
+  } else if (text.length < 20) {
+    recs.push('📋 Подробности: напишите ключевые пожелания к услуге в описании.')
+  }
+
+  return recs
 }
 
 export function cleanUserText(rawText: string): string {
@@ -56,7 +84,7 @@ export async function analyzeRequestFlowWithAI(
   currentDistrict: string,
   maxRetries = 2
 ): Promise<SmartAIResponse> {
-  // STRICT RULE: Only use Gemini 3.5 and higher models (no models below 3.5)
+  // STRICT RULE: Only use Gemini 3.5 and higher models
   const fallbackModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-pro']
 
   const conversationText = conversation.map(c => `${c.role === 'user' ? 'Пользователь' : 'ИИ'}: ${c.text}`).join('\n')
@@ -72,15 +100,18 @@ export async function analyzeRequestFlowWithAI(
 История общения:
 ${conversationText}
 
-ПРАВИЛА ИЗВЛЕЧЕНИЯ JSON БЛОКА:
+ПРАВИЛА ИЗВЛЕЧЕНИЯ JSON БЛОКА И ДЕРЕВА ГЕО-ЛОКАЦИЙ:
 1. "categoryName" (Ниша): Выбери СТРОГО 1 из следующих категорий:
    "ПРОКАТ" | "ЖИЛЬЁ" | "ДЕНЬГИ" | "УСЛУГИ" | "ЕДА" | "КЛИНИНГ" | "КРАСОТА" | "ДЕТИ" | "ТУРЫ" | "ВРАЧИ" | "ПРАКТИКИ" | "ТОВАРЫ" | "ДРУГОЕ"
 
-2. "hub" (Гео): Если пользователь упомянул локацию/остров/город (Пхукет -> phuket, Бали -> bali, Дубай -> dubai, Панган -> phangan), напиши ее slug.
+2. "hub" (Гео): Если пользователь упомянул географию (Пхукет -> phuket, Бали -> bali, Дубай -> dubai, Панган -> phangan, Самуи -> samui, Бангкок -> bangkok), укажи ее slug.
    ЕСЛИ пользователь НЕ УКАЗАЛ Гео в промпте — обязательно используй профиль пользователя: "${currentHub}".
 
-3. "district" (Локация): Если пользователь упомянул район в речи (например, "в Раваи", "на Патонге", "в Чангу"), определи его ("Rawai", "Patong", "Canggu", "Chalong", "Ubud").
-   ЕСЛИ пользователь НЕ УКАЗАЛ район в промпте — обязательно используй профиль пользователя: "${currentDistrict}".
+3. "district" (Локация): СТРОГО СОБЛЮДАЙ ДЕРЕВО ГЕО-ЛОКАЦИЙ!
+   - Если hub = "bali", допустимы ТОЛЬКО районы Бали: "Canggu", "Seminyak", "Ubud", "Nusa Dua", "Uluwatu", "Sanur", "Pererenan". (КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО ставить Раваи/Patong на Бали, так как Раваи это Пхукет!).
+   - Если hub = "phuket", допустимы ТОЛЬКО районы Пхукета: "Patong", "Rawai", "Chalong", "Karon", "Kamala", "Bang Tao", "Cherngtalay".
+   - Если hub = "dubai", допустимы: "Downtown", "Marina", "JBR", "Palm Jumeirah", "Business Bay".
+   - Если пользователь указал район без указания острова (например "в Раваи"), то hub ОБЯЗАТЕЛЬНО должен быть "phuket".
 
 4. "auctionDurationMinutes" (Время аукциона в минутах): 
    Извлеки желаемое время сбора откликов в минутах (допустимо: 30, 60, 120, 360, 1440).
@@ -134,8 +165,13 @@ ${conversationText}
 
           if (parsed && (parsed.status === 'clarify' || parsed.status === 'complete')) {
             if (parsed.status === 'complete' && parsed.requestParams) {
-              parsed.requestParams.hub = parsed.requestParams.hub || currentHub
-              parsed.requestParams.district = parsed.requestParams.district || currentDistrict
+              const rawHub = parsed.requestParams.hub || currentHub
+              const rawDistrict = parsed.requestParams.district || currentDistrict
+              const userMentionedHub = /(?:бали|bali|пхукет|phuket|дубай|dubai|панган|phangan|самуи|samui|бангкок|bangkok)/i.test(conversationText)
+              
+              const validGeo = validateHubAndDistrict(rawHub, rawDistrict, userMentionedHub)
+              parsed.requestParams.hub = validGeo.hub
+              parsed.requestParams.district = validGeo.district
               parsed.requestParams.auctionDurationMinutes = parsed.requestParams.auctionDurationMinutes || 60
               if (parsed.requestParams.budget === undefined) parsed.requestParams.budget = null
             }
@@ -152,8 +188,10 @@ ${conversationText}
     }
   }
 
-  // Fallback: Smart deterministic parser (if Gemini API key missing or network fails)
-  return parseDeterministicRequest(conversation, currentHub, currentDistrict)
+  // Fallback: Smart deterministic parser (if Gemini API key missing, overloaded, or network fails)
+  const fallbackResult = parseDeterministicRequest(conversation, currentHub, currentDistrict)
+  fallbackResult.errorMsg = 'Приносим извинения, в данную секунду ИИ перегружен, повторите попытку через 30 сек или заполните карточку вручную'
+  return fallbackResult
 }
 
 export function parseDeterministicRequest(
@@ -178,7 +216,7 @@ export function parseDeterministicRequest(
     }
   }
 
-  // Detect district in text or fallback to user profile/GPS
+  // Detect district in text
   let detectedDistrict = currentDistrict
   if (/равай|rawai/i.test(lowerText)) detectedDistrict = 'Rawai'
   else if (/патонг|patong/i.test(lowerText)) detectedDistrict = 'Patong'
@@ -191,7 +229,7 @@ export function parseDeterministicRequest(
   else if (/убуд|ubud/i.test(lowerText)) detectedDistrict = 'Ubud'
   else if (/улувату|uluwatu/i.test(lowerText)) detectedDistrict = 'Uluwatu'
 
-  // Detect hub in text or fallback to user profile/GPS
+  // Detect hub in text
   let detectedHub = currentHub
   if (/пхукет|phuket/i.test(lowerText)) detectedHub = 'phuket'
   else if (/бали|bali/i.test(lowerText)) detectedHub = 'bali'
@@ -199,6 +237,10 @@ export function parseDeterministicRequest(
   else if (/панган|phangan/i.test(lowerText)) detectedHub = 'phangan'
   else if (/самуи|samui/i.test(lowerText)) detectedHub = 'samui'
   else if (/бангкок|bangkok/i.test(lowerText)) detectedHub = 'bangkok'
+
+  // Enforce Geo Tree Validation
+  const userMentionedHub = /(?:бали|bali|пхукет|phuket|дубай|dubai|панган|phangan|самуи|samui|бангкок|bangkok)/i.test(lowerText)
+  const validGeo = validateHubAndDistrict(detectedHub, detectedDistrict, userMentionedHub)
 
   // Detect duration in text or default 60 mins
   let durationMinutes = 60
@@ -258,9 +300,10 @@ export function parseDeterministicRequest(
       categoryName,
       budget: extractedBudget,
       description: cleanedText,
-      district: detectedDistrict,
-      hub: detectedHub,
+      district: validGeo.district,
+      hub: validGeo.hub,
       auctionDurationMinutes: durationMinutes
     }
   }
 }
+
