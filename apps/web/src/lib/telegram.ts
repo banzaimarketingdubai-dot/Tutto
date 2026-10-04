@@ -56,27 +56,32 @@ export const openTelegramLink = (url: string) => {
 }
 
 export const initTelegramApp = () => {
-  if (isTelegramEnvironment()) {
-    WebApp.ready()
-    WebApp.expand()
-    
+  const tg = (window as any).Telegram?.WebApp || WebApp
+  if (tg) {
     try {
+      if (typeof tg.ready === 'function') tg.ready()
+      if (typeof tg.expand === 'function') tg.expand()
+
       // API 7.7+: Блокировка сворачивания свайпом вниз
-      if (typeof (WebApp as any).disableVerticalSwipes === 'function') {
+      if (typeof tg.disableVerticalSwipes === 'function') {
+        tg.disableVerticalSwipes()
+      } else if (typeof (WebApp as any).disableVerticalSwipes === 'function') {
         (WebApp as any).disableVerticalSwipes()
       }
+
       // API 8.0+: Открытие в полноэкранном режиме
-      if (typeof (WebApp as any).requestFullscreen === 'function') {
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen()
+      } else if (typeof (WebApp as any).requestFullscreen === 'function') {
         (WebApp as any).requestFullscreen()
       }
-    } catch (e) {
-      console.warn('Telegram WebApp new APIs not supported', e)
-    }
 
-    WebApp.enableClosingConfirmation()
-    // Match theme colors
-    WebApp.setHeaderColor('#0B0F19')
-    WebApp.setBackgroundColor('#0B0F19')
+      if (typeof tg.enableClosingConfirmation === 'function') tg.enableClosingConfirmation()
+      if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#0B0F19')
+      if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0B0F19')
+    } catch (e) {
+      console.warn('Telegram WebApp fullscreen / vertical swipes init error:', e)
+    }
   }
 }
 

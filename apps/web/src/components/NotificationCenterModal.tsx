@@ -21,11 +21,10 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 }) => {
   useScrollLock(isOpen)
 
-  if (!isOpen) return null
-
-
   const [activeFilter, setActiveFilter] = useState<'all' | 'bid' | 'market' | 'reward'>('all')
   const [soundEnabled, setSoundEnabled] = useState(true)
+
+  if (!isOpen) return null
 
   const filteredNotifications = notifications.filter((n) => {
     if (activeFilter === 'all') return true

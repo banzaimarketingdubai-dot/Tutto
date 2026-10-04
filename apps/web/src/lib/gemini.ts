@@ -7,10 +7,11 @@ const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 export interface ParsedRequest {
   title: string
   categoryName: string
-  budget: number
+  hub: string
+  district: string
+  auctionDurationMinutes: number
   description: string
-  district?: string
-  hub?: string
+  budget: number | null
 }
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -45,30 +46,42 @@ export async function analyzeRequestFlowWithAI(
 
   const prompt = `
 Ты - главный ИИ-ассистент сервиса TuttoMinutto (обратный аукцион услуг и маркетплейс в курортных хабах).
-Твоя задача - извлечь из разговорной речи пользователя параметры запроса, ПОЛНОСТЬЮ УБРАТЬ РАЗГОВОРНЫЙ МУСОР И ВВОДНЫЕ СЛОВА ("привет", "слушай", "короче", "в общем", "типа", "мне бы", "хотел узнать", "напиши") и составить КРАТКУЮ, ЧЕТКУЮ профессиональную карточку запроса.
+Твоя задача - извлечь из разговорной речи пользователя параметры запроса, ПОЛНОСТЬЮ УБРАТЬ РАЗГОВОРНЫЙ МУСОР И ВВОДНЫЕ СЛОВА ("привет", "слушай", "короче", "в общем", "типа", "мне бы", "хотел узнать", "напиши") и составить КРАТКУЮ, ЧЕТКУЮ профессиональную карточку запроса в виде JSON блока.
 
-Текущие параметры GPS пользователя: Хаб ${currentHub}, Район по умолчанию: ${currentDistrict}.
+Профиль / GPS пользователя по умолчанию:
+- Хаб (Гео): "${currentHub}"
+- Район (Локация): "${currentDistrict}"
 
 История общения:
 ${conversationText}
 
-ПРАВИЛА ИЗВЛЕЧЕНИЯ:
-1. TITLE: Выдели СУТЬ предмета/услуги до 40 символов с правильным префиксом:
-   - Прокат транспорта -> "СНИМУ В АРЕНДУ: [Название/Модель]" (например: "СНИМУ В АРЕНДУ: Скутер NMAX 155cc")
-   - Аренда жилья -> "СНИМУ: [Тип жилья]" (например: "СНИМУ: Виллу 2BR с бассейном")
-   - Обмен денег -> "ОБМЕНЯЮ: [Сумма и валюта]" (например: "ОБМЕНЯЮ: 500 USDT на баты")
-   - Заказ услуг -> "ЗАКАЖУ: [Название услуги]" (например: "ЗАКАЖУ: Выездной массаж на виллу")
-   - Покупка товаров -> "КУПЛЮ: [Товар]" (например: "КУПЛЮ: Шлем Shoei XL")
-   - Общий поиск -> "ИЩУ: [Суть поиска]"
-
-2. CATEGORY (Выбери СТРОГО 1 из следующих категорий):
+ПРАВИЛА ИЗВЛЕЧЕНИЯ JSON БЛОКА:
+1. "categoryName" (Ниша): Выбери СТРОГО 1 из следующих категорий:
    "ПРОКАТ" | "ЖИЛЬЁ" | "ДЕНЬГИ" | "УСЛУГИ" | "ЕДА" | "КЛИНИНГ" | "КРАСОТА" | "ДЕТИ" | "ТУРЫ" | "ВРАЧИ" | "ПРАКТИКИ" | "ТОВАРЫ" | "ДРУГОЕ"
 
-3. BUDGET: Извлеки чистую цифру бюджета (например, если написано "$15 в день" или "1500 бат", верни число 15 или 1500). Если бюджет не назван, верни 0.
+2. "hub" (Гео): Если пользователь упомянул локацию/остров/город (Пхукет -> phuket, Бали -> bali, Дубай -> dubai, Панган -> phangan), напиши ее slug.
+   ЕСЛИ пользователь НЕ УКАЗАЛ Гео в промпте — обязательно используй профиль пользователя: "${currentHub}".
 
-4. DISTRICT: Если пользователь упомянул район в речи (например, "в Раваи", "на Патонге", "в Чангу"), определи его (например "Rawai", "Patong", "Canggu"). Если не упомянул, используй текущий GPS район: "${currentDistrict}".
+3. "district" (Локация): Если пользователь упомянул район в речи (например, "в Раваи", "на Патонге", "в Чангу"), определи его ("Rawai", "Patong", "Canggu", "Chalong", "Ubud").
+   ЕСЛИ пользователь НЕ УКАЗАЛ район в промпте — обязательно используй профиль пользователя: "${currentDistrict}".
 
-5. DESCRIPTION: 1-2 четких предложения с деталями БЕЗ приветствий и мусора.
+4. "auctionDurationMinutes" (Время аукциона в минутах): 
+   Извлеки желаемое время сбора откликов в минутах (допустимо: 30, 60, 120, 360, 1440).
+   Если пользователь не указал конкретное время аукциона, установи значение по умолчанию: 60.
+
+5. "budget" (Цена): 
+   Извлеки чистую цифру бюджета (в USD или local currency, например 1500 или 25). 
+   ВНИМАНИЕ: Если пользователь не назвал цену или сказано "любая", "по договоренности", "без разницы", верни null.
+
+6. "title" (Заголовок): Выдели СУТЬ предмета/услуги до 40 символов с правильным префиксом:
+   - Прокат транспорта -> "СНИМУ В АРЕНДУ: [Название]"
+   - Аренда жилья -> "СНИМУ: [Тип жилья]"
+   - Обмен денег -> "ОБМЕНЯЮ: [Сумма и валюта]"
+   - Заказ услуг -> "ЗАКАЖУ: [Название услуги]"
+   - Покупка товаров -> "КУПЛЮ: [Товар]"
+   - Общий поиск -> "ИЩУ: [Суть]"
+
+7. "description" (Описание): 1-2 четких предложения с деталями БЕЗ приветствий и мусора.
 
 Верни СТРОГО только JSON:
 Для уточнения:
@@ -83,10 +96,11 @@ ${conversationText}
   "requestParams": {
     "title": "СНИМУ В АРЕНДУ: Скутер NMAX 155cc",
     "categoryName": "ПРОКАТ",
-    "budget": 15,
-    "description": "Нужен скутер NMAX на 7 дней. Доставка в отель.",
+    "hub": "${currentHub}",
     "district": "${currentDistrict}",
-    "hub": "${currentHub}"
+    "auctionDurationMinutes": 60,
+    "description": "Нужен скутер NMAX на 7 дней. Доставка в отель.",
+    "budget": 15
   }
 }
 `
@@ -102,11 +116,23 @@ ${conversationText}
           const parsed = JSON.parse(jsonStr)
 
           if (parsed && (parsed.status === 'clarify' || parsed.status === 'complete')) {
+            if (parsed.status === 'complete' && parsed.requestParams) {
+              parsed.requestParams.hub = parsed.requestParams.hub || currentHub
+              parsed.requestParams.district = parsed.requestParams.district || currentDistrict
+              parsed.requestParams.auctionDurationMinutes = parsed.requestParams.auctionDurationMinutes || 60
+              if (parsed.requestParams.budget === undefined) parsed.requestParams.budget = null
+            }
             return parsed as SmartAIResponse
           }
         } catch (error: any) {
           console.warn(`Gemini API Warning (${modelName}, Attempt ${attempt}):`, error)
           
+          sendSuperadminErrorAlert(
+            `Gemini API Error (${modelName}, Попытка ${attempt}): ${error?.message || error}`,
+            error?.stack,
+            'gemini.ts analyzeRequestFlowWithAI'
+          )
+
           const isModelDeprecated = error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('not found')
           if (isModelDeprecated) {
             continue
@@ -136,27 +162,46 @@ export function parseDeterministicRequest(
   const cleanedText = cleanUserText(rawUserText)
   const lowerText = rawUserText.toLowerCase()
 
-  // Extract budget safely
-  let extractedBudget = 0
-  const budgetMatch = lowerText.match(/(?:бюджет|цена|за|\$)?\s*(\d+[\d\s]*)(?:\s*(?:бат|thb|\$|usd|руб|rub|\/сут|\/день))?/i) || lowerText.match(/(\d{1,6})\s*(?:бат|thb|\$|usd|руб)/i)
-  if (budgetMatch && budgetMatch[1]) {
-    const parsedNum = parseInt(budgetMatch[1].replace(/\s+/g, ''), 10)
-    if (!isNaN(parsedNum) && parsedNum > 0) {
-      extractedBudget = parsedNum
+  // Extract budget safely or return null for "Любая"
+  let extractedBudget: number | null = null
+  if (!/любая|любой|по договоренности|договоренности|без разницы|не важно/i.test(lowerText)) {
+    const budgetMatch = lowerText.match(/(?:бюджет|цена|за|\$)?\s*(\d+[\d\s]*)(?:\s*(?:бат|thb|\$|usd|руб|rub|\/сут|\/день))?/i) || lowerText.match(/(\d{1,6})\s*(?:бат|thb|\$|usd|руб)/i)
+    if (budgetMatch && budgetMatch[1]) {
+      const parsedNum = parseInt(budgetMatch[1].replace(/\s+/g, ''), 10)
+      if (!isNaN(parsedNum) && parsedNum > 0) {
+        extractedBudget = parsedNum
+      }
     }
   }
 
-  // Detect district in text
+  // Detect district in text or fallback to user profile/GPS
   let detectedDistrict = currentDistrict
   if (/равай|rawai/i.test(lowerText)) detectedDistrict = 'Rawai'
   else if (/патонг|patong/i.test(lowerText)) detectedDistrict = 'Patong'
   else if (/чалонг|chalong/i.test(lowerText)) detectedDistrict = 'Chalong'
   else if (/карон|karon/i.test(lowerText)) detectedDistrict = 'Karon'
   else if (/камала|kamala/i.test(lowerText)) detectedDistrict = 'Kamala'
+  else if (/банг\s*тао|bang\s*tao/i.test(lowerText)) detectedDistrict = 'Bang Tao'
   else if (/чангу|canggu/i.test(lowerText)) detectedDistrict = 'Canggu'
   else if (/семиньяк|seminyak/i.test(lowerText)) detectedDistrict = 'Seminyak'
   else if (/убуд|ubud/i.test(lowerText)) detectedDistrict = 'Ubud'
   else if (/улувату|uluwatu/i.test(lowerText)) detectedDistrict = 'Uluwatu'
+
+  // Detect hub in text or fallback to user profile/GPS
+  let detectedHub = currentHub
+  if (/пхукет|phuket/i.test(lowerText)) detectedHub = 'phuket'
+  else if (/бали|bali/i.test(lowerText)) detectedHub = 'bali'
+  else if (/дубай|дубаи|dubai/i.test(lowerText)) detectedHub = 'dubai'
+  else if (/панган|phangan/i.test(lowerText)) detectedHub = 'phangan'
+  else if (/самуи|samui/i.test(lowerText)) detectedHub = 'samui'
+  else if (/бангкок|bangkok/i.test(lowerText)) detectedHub = 'bangkok'
+
+  // Detect duration in text or default 60 mins
+  let durationMinutes = 60
+  if (/30\s*мин|полчаса/i.test(lowerText)) durationMinutes = 30
+  else if (/2\s*час|120\s*мин/i.test(lowerText)) durationMinutes = 120
+  else if (/6\s*час|360\s*мин/i.test(lowerText)) durationMinutes = 360
+  else if (/суток|сутки|24\s*час|1440\s*мин/i.test(lowerText)) durationMinutes = 1440
 
   let titleIntent = ''
   let categoryName = 'УСЛУГИ'
@@ -210,7 +255,8 @@ export function parseDeterministicRequest(
       budget: extractedBudget,
       description: cleanedText,
       district: detectedDistrict,
-      hub: currentHub
+      hub: detectedHub,
+      auctionDurationMinutes: durationMinutes
     }
   }
 }

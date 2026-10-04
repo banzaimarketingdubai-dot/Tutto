@@ -399,7 +399,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
               </div>
 
               {isEditingCard ? (
-                /* Editable Form Controls */
+                /* Editable Form Controls for JSON Block */
                 <div className="space-y-3.5 animate-fadeIn">
                   <div>
                     <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
@@ -427,20 +427,31 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                     />
                   </div>
 
-                  {/* Budget Selector */}
+                  {/* Price / Budget Selector (Supports empty/null for "Любая") */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">
-                        Бюджет ($ / THB)
+                        Цена / Бюджет ($ / THB)
                       </label>
-                      <span className="text-[10px] text-gray-400">0 = по договоренности</span>
+                      <span className="text-[10px] text-amber-300/80 font-medium">
+                        {finalCard.budget ? `$${finalCard.budget}` : 'Любая (по договоренности)'}
+                      </span>
                     </div>
                     <input
-                      type="number"
-                      value={finalCard.budget || ''}
-                      onChange={e => updateFinalCard('budget', parseFloat(e.target.value) || 0)}
-                      className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-amber-400 font-bold text-sm focus:border-cyan-400 outline-none transition-all mb-2 font-mono"
-                      placeholder="0 = по договоренности"
+                      type="text"
+                      inputMode="numeric"
+                      value={finalCard.budget === null || finalCard.budget === undefined ? '' : finalCard.budget}
+                      onChange={e => {
+                        const val = e.target.value.replace(/^0+(?=\d)/, '')
+                        if (val === '') {
+                          updateFinalCard('budget', null)
+                        } else {
+                          const parsed = parseFloat(val)
+                          updateFinalCard('budget', isNaN(parsed) ? null : parsed)
+                        }
+                      }}
+                      className="w-full bg-black/60 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-400 font-bold text-sm focus:border-amber-400 outline-none transition-all mb-2 font-mono"
+                      placeholder="Введите сумму или оставьте пустым (Любая)"
                     />
                     {/* Quick Budget Chips */}
                     <div className="flex flex-wrap gap-1.5">
@@ -465,50 +476,93 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                         type="button"
                         onClick={() => {
                           triggerHapticFeedback('light')
-                          updateFinalCard('budget', 0)
+                          updateFinalCard('budget', null)
                         }}
                         className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          !finalCard.budget
+                          finalCard.budget === null || finalCard.budget === 0
                             ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]'
                             : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
                         }`}
                       >
-                        По договоренности
+                        Любая (По договоренности)
                       </button>
                     </div>
                   </div>
 
-                  {/* District & Location Selector */}
-                  <div>
-                    <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
-                      Локация / Район
-                    </label>
-                    <div className="space-y-2">
+                  {/* Hub (Гео) and District (Локация) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                        Гео (Хаб)
+                      </label>
+                      <select
+                        value={finalCard.hub || currentHub}
+                        onChange={e => updateFinalCard('hub', e.target.value)}
+                        className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-xs focus:border-cyan-400 outline-none transition-all cursor-pointer"
+                      >
+                        <option value="phuket" className="bg-[#0D1117]">🏝️ Пхукет (phuket)</option>
+                        <option value="bali" className="bg-[#0D1117]">🌺 Бали (bali)</option>
+                        <option value="dubai" className="bg-[#0D1117]">🏙️ Дубай (dubai)</option>
+                        <option value="phangan" className="bg-[#0D1117]">🌕 Панган (phangan)</option>
+                        <option value="samui" className="bg-[#0D1117]">🥥 Самуи (samui)</option>
+                        <option value="bangkok" className="bg-[#0D1117]">🏛️ Бангкок (bangkok)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                        Локация (Район)
+                      </label>
                       <select
                         value={finalCard.district || currentDistrict}
                         onChange={e => updateFinalCard('district', e.target.value)}
-                        className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-sm focus:border-cyan-400 outline-none transition-all cursor-pointer"
+                        className="w-full bg-black/60 border border-cyan-500/40 rounded-xl px-3 py-2 text-white font-bold text-xs focus:border-cyan-400 outline-none transition-all cursor-pointer"
                       >
-                        {['Patong', 'Rawai', 'Chalong', 'Karon', 'Kamala', 'Bang Tao', 'Cherngtalay', 'Canggu', 'Seminyak', 'Ubud', 'Nusa Dua', 'Thonglor', 'Ekkamai', 'Nha Trang Centre', 'Центр'].map(dist => (
+                        {['Rawai', 'Patong', 'Chalong', 'Karon', 'Kamala', 'Bang Tao', 'Cherngtalay', 'Canggu', 'Seminyak', 'Ubud', 'Nusa Dua', 'Thonglor', 'Центр'].map(dist => (
                           <option key={dist} value={dist} className="bg-[#0D1117] text-white">
                             📍 {dist}
                           </option>
                         ))}
                       </select>
-                      <input
-                        type="text"
-                        value={finalCard.district || ''}
-                        onChange={e => updateFinalCard('district', e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-300 focus:border-cyan-400 outline-none"
-                        placeholder="Или введите свой район вручную..."
-                      />
                     </div>
                   </div>
 
-                  {/* Category Selector (13 Niche Categories) */}
+                  {/* Auction Duration (Время аукциона) */}
+                  <div>
+                    <label className="text-[11px] font-bold text-purple-400 uppercase tracking-wider block mb-1">
+                      Время аукциона (Сбор откликов)
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: '30 мин', mins: 30 },
+                        { label: '1 час', mins: 60 },
+                        { label: '2 часа', mins: 120 },
+                        { label: '6 часов', mins: 360 },
+                        { label: '24 часа', mins: 1440 }
+                      ].map(item => (
+                        <button
+                          key={item.mins}
+                          type="button"
+                          onClick={() => {
+                            triggerHapticFeedback('light')
+                            updateFinalCard('auctionDurationMinutes', item.mins)
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            (finalCard.auctionDurationMinutes || 60) === item.mins
+                              ? 'bg-purple-500 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)]'
+                              : 'bg-white/5 text-purple-300/80 hover:bg-white/10 border border-purple-500/20'
+                          }`}
+                        >
+                          ⏱️ {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Category Selector (Ниша) */}
                   <div>
                     <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1.5">
-                      Ниша / Категория
+                      Ниша (Категория)
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       {[
@@ -555,7 +609,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                     {finalCard.description}
                   </p>
 
-                  {/* Clickable Quick Edit Pills */}
+                  {/* Clickable Quick Edit Pills for JSON data */}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <button
                       onClick={() => {
@@ -564,7 +618,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                       }}
                       className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-xl text-xs font-bold border border-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
                     >
-                      <span>💰 ${finalCard.budget || 'По договоренности'}</span>
+                      <span>💰 Цена: {finalCard.budget ? `$${finalCard.budget}` : 'Любая'}</span>
                       <Edit3 className="w-3 h-3 text-amber-400/60" />
                     </button>
                     <button
@@ -574,8 +628,18 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                       }}
                       className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-200 rounded-xl text-xs font-bold border border-white/10 transition-all flex items-center gap-1 cursor-pointer"
                     >
-                      <span>📍 {finalCard.district || currentDistrict}</span>
+                      <span>🌐 {(finalCard.hub || currentHub).toUpperCase()} • {finalCard.district || currentDistrict}</span>
                       <Edit3 className="w-3 h-3 text-gray-400" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        triggerHapticFeedback('light')
+                        setIsEditingCard(true)
+                      }}
+                      className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-xl text-xs font-bold border border-purple-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>⏱️ Аукцион: {(finalCard.auctionDurationMinutes || 60) >= 60 ? `${(finalCard.auctionDurationMinutes || 60) / 60}ч.` : `${finalCard.auctionDurationMinutes}м.`}</span>
+                      <Edit3 className="w-3 h-3 text-purple-400/60" />
                     </button>
                     <button
                       onClick={() => {

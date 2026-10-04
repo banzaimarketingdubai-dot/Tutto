@@ -14,8 +14,29 @@
     
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+      (function() {
+        try {
+          if (window.Telegram && window.Telegram.WebApp) {
+            var tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            if (typeof tg.disableVerticalSwipes === 'function') {
+              tg.disableVerticalSwipes();
+            }
+            if (typeof tg.requestFullscreen === 'function') {
+              tg.requestFullscreen();
+            }
+            if (typeof tg.setHeaderColor === 'function') {
+              tg.setHeaderColor('#0B0F19');
+              tg.setBackgroundColor('#0B0F19');
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-[#0D1117] text-white">
+  <body class="bg-[#0D1117] text-white overscroll-y-none">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

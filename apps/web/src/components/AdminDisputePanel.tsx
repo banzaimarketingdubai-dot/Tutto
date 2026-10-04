@@ -42,7 +42,6 @@ export const AdminDisputePanel: React.FC<AdminDisputePanelProps> = ({
   currentLang,
 }) => {
   const lang = currentLang || detectDefaultLanguage()
-  if (!isOpen) return null
 
   const [adminTab, setAdminTab] = useState<'disputes' | 'analytics'>('disputes')
   const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open')
@@ -51,6 +50,8 @@ export const AdminDisputePanel: React.FC<AdminDisputePanelProps> = ({
   const [decisionText, setDecisionText] = useState('')
   const [isSendingReport, setIsSendingReport] = useState(false)
   const [reportResult, setReportResult] = useState<string | null>(null)
+
+  if (!isOpen) return null
 
   const handleSendKeyReport = async () => {
     triggerHapticFeedback('medium')

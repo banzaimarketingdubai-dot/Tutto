@@ -13,6 +13,7 @@ interface MyDealsAndListingsViewProps {
   onOpenMarketItem: (item: MarketItem) => void
   onDeleteMarketItem: (itemId: string) => void
   onDeleteRequest: (reqId: string) => void
+  onOpenQuickRequest?: () => void
 }
 
 function getMockBidsForRequest(req: RequestItem): BidItem[] {
@@ -125,6 +126,7 @@ export const MyDealsAndListingsView: React.FC<MyDealsAndListingsViewProps> = ({
   onOpenMarketItem,
   onDeleteMarketItem,
   onDeleteRequest,
+  onOpenQuickRequest,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'requests' | 'market' | 'bids' | 'templates'>('requests')
   const [isRulesOpen, setIsRulesOpen] = useState(false)
@@ -262,8 +264,45 @@ export const MyDealsAndListingsView: React.FC<MyDealsAndListingsViewProps> = ({
       {activeSubTab === 'requests' && (
         <div className="space-y-4">
           {myRequests.length === 0 ? (
-            <div className="glass-card p-6 text-center rounded-2xl border border-white/10 space-y-2">
-              <p className="text-xs text-gray-400">У вас пока нет активных заявок в аукционе услуг.</p>
+            <div className="w-full rounded-3xl p-6 bg-gradient-to-br from-[#0D1527] via-[#151D30] to-[#0A101D] border-2 border-cyan-500/50 shadow-[0_0_35px_rgba(0,242,254,0.2)] text-center space-y-4 animate-fadeIn">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+                <Sparkles className="w-7 h-7 text-[#00F2FE] animate-pulse" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-black text-white">Создайте вашу первую заявку</h3>
+                <p className="text-xs text-gray-300 mt-1 max-w-sm mx-auto leading-relaxed">
+                  В TuttoMinutto вам не нужно искать исполнителей вручную. ИИ сформирует карточку запроса за секунды, а проверенные исполнители сами пришлют свои предложения.
+                </p>
+              </div>
+
+              {/* 3 Step Explanation */}
+              <div className="grid grid-cols-3 gap-2 py-2 text-left">
+                <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-black text-cyan-400 uppercase">1. Опишите</div>
+                  <p className="text-[11px] text-gray-200 font-medium leading-tight">Надиктуйте или напишите текст</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-black text-amber-400 uppercase">2. Сравните</div>
+                  <p className="text-[11px] text-gray-200 font-medium leading-tight">Получите отклики с ценами</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-black text-emerald-400 uppercase">3. Выберите</div>
+                  <p className="text-[11px] text-gray-200 font-medium leading-tight">Выберите лучшее и откройте чат</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHapticFeedback('heavy')
+                  if (onOpenQuickRequest) onOpenQuickRequest()
+                }}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-[#00F2FE] to-[#00A3FF] text-black font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,242,254,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 fill-black" />
+                <span>Создать заявку с ИИ-помощником</span>
+              </button>
             </div>
           ) : (
             myRequests.map((req) => {

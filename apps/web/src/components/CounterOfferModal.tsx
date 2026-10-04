@@ -21,12 +21,11 @@ export const CounterOfferModal: React.FC<CounterOfferModalProps> = ({
 }) => {
   useScrollLock(isOpen)
 
-  if (!isOpen || !offer) return null
-
-
-  const defaultCounterPrice = Math.max(1, Math.round(offer.proposedPrice * 0.9))
+  const defaultCounterPrice = offer ? Math.max(1, Math.round(offer.proposedPrice * 0.9)) : 100
   const [customPrice, setCustomPrice] = useState<string>(String(defaultCounterPrice))
   const [message, setMessage] = useState<string>(`Здравствуйте! Готов принять ваше предложение за $${defaultCounterPrice}. Договорились?`)
+
+  if (!isOpen || !offer) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

@@ -32,9 +32,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
 }) => {
   useScrollLock(isOpen)
 
-  if (!isOpen) return null
-
-
   const [rating, setRating] = useState<number>(5)
   const [hoverRating, setHoverRating] = useState<number>(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([
@@ -45,6 +42,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   const [mediaFiles, setMediaFiles] = useState<{ url: string; type: 'image' | 'video' }[]>([])
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  if (!isOpen) return null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

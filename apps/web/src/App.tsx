@@ -243,7 +243,7 @@ export function App() {
       status: 'open',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-      auctionEndsAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      auctionEndsAt: new Date(Date.now() + (newReq.auctionDurationMinutes || 60) * 60 * 1000).toISOString(),
       bidsCount: 3,
     }
 
@@ -567,6 +567,7 @@ export function App() {
             <MyDealsAndListingsView
               myRequests={requests}
               myMarketItems={marketProducts}
+              onOpenQuickRequest={() => setIsAIAssistantOpen(true)}
               onOpenDealChat={(req, bid, isPreDeal = false) => {
                 setActiveDealRequest(req)
                 setActiveDealBid(bid)
