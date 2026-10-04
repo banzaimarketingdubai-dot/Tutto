@@ -56,7 +56,8 @@ export async function analyzeRequestFlowWithAI(
   currentDistrict: string,
   maxRetries = 2
 ): Promise<SmartAIResponse> {
-  const fallbackModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+  // STRICT RULE: Only use Gemini 3.5 and higher models (no models below 3.5)
+  const fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.5-pro']
 
   const conversationText = conversation.map(c => `${c.role === 'user' ? 'Пользователь' : 'ИИ'}: ${c.text}`).join('\n')
 
@@ -141,15 +142,19 @@ ${conversationText}
             return parsed as SmartAIResponse
           }
         } catch (error: any) {
-          console.warn(`Gemini API Warning (${modelName}, Attempt ${attempt}):`, error)
-          
-          sendSuperadminErrorAlert(
-            `Gemini API Error (${modelName}, Попытка ${attempt}): ${error?.message || error}`,
-            error?.stack,
-            'gemini.ts analyzeRequestFlowWithAI'
-          )
-
           const isModelDeprecated = error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('not found')
+          
+          console.warn(`Gemini API Warning (${modelName}, Attempt ${attempt}):`, error?.message || error)
+
+          // Only send Telegram superadmin alert for non-404 unexpected errors
+          if (!isModelDeprecated) {
+            sendSuperadminErrorAlert(
+              `Gemini API Error (${modelName}, Попытка ${attempt}): ${error?.message || error}`,
+              error?.stack,
+              'gemini.ts analyzeRequestFlowWithAI'
+            )
+          }
+
           if (isModelDeprecated) {
             continue
           }

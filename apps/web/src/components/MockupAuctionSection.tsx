@@ -672,7 +672,7 @@ function AuctionRequestCard({ item, onOpenBidModal }: { item: RequestItem, onOpe
             <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=64" className="w-6 h-6 rounded-full border border-[#050811]" />
           </div>
           <span className="text-[13px] font-semibold text-cyan-200">
-            🤖 {item.bidsCount > 0 ? `Откликов ИИ: ${item.bidsCount}` : 'Анализируем...'}
+            ⚡ {item.bidsCount > 0 ? `Откликов: ${item.bidsCount}` : 'Анализируем...'}
           </span>
         </div>
         
