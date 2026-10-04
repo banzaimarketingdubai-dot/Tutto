@@ -34,6 +34,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 
 import { SuperAdminPanelView } from './components/SuperAdminPanelView'
 import { LiveOfferToast } from './components/LiveOfferToast'
+import { getNicheCoverImage } from './lib/nicheCovers'
 
 export function App() {
   const [currentLang, setCurrentLang] = useState<Language>(() => detectDefaultLanguage())
@@ -43,7 +44,36 @@ export function App() {
   const [activeCategory, setActiveCategory] = useState<string | null>('cat-transport')
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false)
 
-  const [requests, setRequests] = useState<RequestItem[]>(MOCK_REQUESTS)
+  const [requests, setRequests] = useState<RequestItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('tutto_user_requests')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+      }
+    } catch (e) {
+      console.error('Failed to load user requests:', e)
+    }
+    return []
+  })
+
+  const [bidsByRequestId, setBidsByRequestId] = useState<Record<string, BidItem[]>>(() => {
+    try {
+      const saved = localStorage.getItem('tutto_bids_by_req')
+      if (saved) return JSON.parse(saved)
+    } catch (e) {
+      console.error('Failed to load bids:', e)
+    }
+    return {}
+  })
+
+  useEffect(() => {
+    localStorage.setItem('tutto_user_requests', JSON.stringify(requests))
+  }, [requests])
+
+  useEffect(() => {
+    localStorage.setItem('tutto_bids_by_req', JSON.stringify(bidsByRequestId))
+  }, [bidsByRequestId])
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
@@ -238,13 +268,15 @@ export function App() {
       description: newReq.description || '',
       budget: typeof newReq.budget === 'number' ? newReq.budget : 0,
       currency: 'USD',
-      mediaUrls: newReq.mediaUrls || [],
+      mediaUrls: newReq.mediaUrls && newReq.mediaUrls.length > 0
+        ? newReq.mediaUrls
+        : [getNicheCoverImage(catName, newReq.title || '')],
       isFeatured: true,
       status: 'open',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
       auctionEndsAt: new Date(Date.now() + (newReq.auctionDurationMinutes || 60) * 60 * 1000).toISOString(),
-      bidsCount: 3,
+      bidsCount: 0,
     }
 
     setRequests((prev) => [createdItem, ...prev])
@@ -265,28 +297,6 @@ export function App() {
       },
       ...prev,
     ])
-
-    // Trigger Realtime Live Offer Toast for inDrive experience
-    setTimeout(() => {
-      setActiveLiveToast({
-        message: '⚡ Новый оффер от Phuket Bike Rentals Co.!',
-        subtext: 'Yamaha NMAX 2024г. с доставкой в отель в Раваи',
-        price: 14,
-        providerName: 'Phuket Bike Rentals Co.',
-      })
-      setNotifications((prev) => [
-        {
-          id: `notif-${Date.now()}-offer`,
-          type: 'bid',
-          title: `🤖 Новый отклик от Phuket Bike Rentals Co.`,
-          message: `Предложение $14 USD на ваш запрос «${createdItem.title}» с доставкой в отель.`,
-          timestamp: 'Только что',
-          isRead: false,
-          actionTab: 'my-bids',
-        },
-        ...prev,
-      ])
-    }, 1800)
   }
 
   const handleCreateMarketListing = (newItem: MarketItem) => {
@@ -378,7 +388,7 @@ export function App() {
     }
 
     setRequests((prev) =>
-      prev.map((r) => (r.id === requestId ? { ...r, bidsCount: r.bidsCount + 1 } : r))
+      prev.map((r) => (r.id === requestId ? { ...r, bidsCount: (r.bidsCount || 0) + 1 } : r))
     )
 
     let targetReq = requests.find((r) => r.id === requestId)
@@ -387,28 +397,46 @@ export function App() {
     }
 
     if (targetReq) {
-      const mockBid: BidItem = {
+      const newBid: BidItem = {
         id: `bid-${Date.now()}`,
         requestId: targetReq.id,
-        providerId: 'biz-1',
-        providerName: 'Ayana Luxury Resort',
-        providerAvatar: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=100',
-        providerRating: 4.98,
+        providerId: 'usr-provider',
+        providerName: 'PRO Исполнитель',
+        providerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        providerRating: 5.0,
         isPro: true,
-        isAiAgent: true,
+        isAiAgent: false,
         proposedPrice: price,
         currency: 'USD',
-        comment: comment || 'Вилла готова к бронированию!',
-        status: 'accepted',
+        comment: comment || 'Готов выполнить ваш заказ!',
+        status: 'pending',
         createdAt: new Date().toISOString(),
         attachedOffer: attachedOffer,
       }
 
+      setBidsByRequestId((prev) => ({
+        ...prev,
+        [targetReq!.id]: [...(prev[targetReq!.id] || []), newBid],
+      }))
+
+      setNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}-bid`,
+          type: 'bid',
+          title: `🤖 Новый отклик на запрос «${targetReq!.title}»`,
+          message: `Предложение $${price} USD от ${newBid.providerName}: «${newBid.comment}»`,
+          timestamp: 'Только что',
+          isRead: false,
+          actionTab: 'my-bids',
+        },
+        ...prev,
+      ])
+
       setActiveDealRequest(targetReq)
-      setActiveDealBid(mockBid)
+      setActiveDealBid(newBid)
     }
 
-    setNotificationMsg(`✅ Предложение принято! Чат сделки открыт.`)
+    setNotificationMsg(`✅ Предложение отправлено! Чат сделки открыт.`)
     setTimeout(() => setNotificationMsg(null), 4000)
   }
 
@@ -605,6 +633,7 @@ export function App() {
             <MyDealsAndListingsView
               myRequests={requests}
               myMarketItems={marketProducts}
+              bidsByRequestId={bidsByRequestId}
               onOpenQuickRequest={() => setIsAIAssistantOpen(true)}
               onOpenDealChat={(req, bid, isPreDeal = false) => {
                 setActiveDealRequest(req)
@@ -703,7 +732,6 @@ export function App() {
           onClose={() => setIsAdminDisputeOpen(false)} 
           currentLang={currentLang}
           onOpenDisputeChat={(dealId) => {
-            // Mock a request and bid to show the chat
             const mockReq: RequestItem = {
               id: dealId,
               clientId: 'client-1',
@@ -743,7 +771,6 @@ export function App() {
             }
             setActiveDealRequest(mockReq)
             setActiveDealBid(mockBid)
-            // Close admin panel or keep it open in background
             setIsAdminDisputeOpen(false)
           }}
         />
@@ -823,7 +850,18 @@ export function App() {
           mode={mode}
           currentLang={currentLang}
           unreadChatCount={unreadChatCount}
+          unreadBidsCount={notifications.filter((n) => !n.isRead && (n.type === 'bid' || n.actionTab === 'my-bids')).length}
+          onBlockedClick={() => {
+            setNotificationMsg('🔒 Раздел находится в режиме «Ранний доступ». Нижнее меню доступно только в Аренде')
+            setTimeout(() => setNotificationMsg(null), 3000)
+          }}
           onCentralAction={() => {
+            if (mode !== 'rent') {
+              triggerHapticFeedback('heavy')
+              setNotificationMsg('🔒 Раздел находится в режиме «Ранний доступ». Нижнее меню доступно только в Аренде')
+              setTimeout(() => setNotificationMsg(null), 3000)
+              return
+            }
             triggerHapticFeedback('heavy')
             setIsCreateActionSheetOpen(true)
           }}

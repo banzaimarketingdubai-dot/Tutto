@@ -254,32 +254,21 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
             </div>
 
             {isTelegramLinked ? (
-              <div className="flex items-center gap-1.5">
-                <a
-                  href="https://t.me/tuttominutto_bot"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-400 font-bold text-[10px] flex items-center gap-1 border border-white/10 transition-colors"
-                >
-                  <span>Бот ТГ</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-                <button
-                  onClick={handleUnlinkTelegram}
-                  className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[10px] border border-rose-500/30 transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Отвязать Telegram аккаунт"
-                >
-                  <LogOut className="w-3 h-3" />
-                  <span>Отвязать</span>
-                </button>
-              </div>
+              <button
+                onClick={handleUnlinkTelegram}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[10px] border border-rose-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Отвязать Telegram аккаунт"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Отвязать</span>
+              </button>
             ) : (
               <button
                 onClick={handleConnectTelegram}
                 className="px-3 py-1.5 rounded-xl bg-[#0088cc] text-white font-bold text-[10px] hover:brightness-110 shadow-[0_0_10px_rgba(0,136,204,0.4)] transition-all flex items-center gap-1 cursor-pointer"
                 title="Авторизовать бот и объединить с почтой"
               >
-                <span>Привязать Бот</span>
+                <span>Привязать</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             )}
@@ -310,10 +299,10 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ session, onOpe
               <button
                 onClick={handleSignOutEmail}
                 className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[10px] border border-rose-500/30 transition-colors flex items-center gap-1 cursor-pointer"
-                title="Выйти из Google аккаунта"
+                title="Отвязать Google аккаунт"
               >
                 <LogOut className="w-3 h-3" />
-                <span>Выйти</span>
+                <span>Отвязать</span>
               </button>
             ) : (
               <button

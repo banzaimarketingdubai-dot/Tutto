@@ -5,6 +5,7 @@ import { SERVICE_TEMPLATES, CATEGORIES, MOCK_OFFER_INSTANCES } from '../data/moc
 import { triggerHapticFeedback } from '../lib/telegram'
 import { FeedHeader } from './FeedHeader'
 import { ClientOffersStream } from './ClientOffersStream'
+import { CreateRequestDashedCard } from './MyDealsAndListingsView'
 
 interface MockupAuctionSectionProps {
   mode?: 'rent' | 'services'
@@ -309,8 +310,8 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
     ? SERVICE_TEMPLATES.filter((tmpl) => tmpl.categoryL1Id === activeCategory)
     : SERVICE_TEMPLATES
 
-  // Only use actual requests for the main feed
-  const combinedItems = requests.filter((r) => !myRequests.some((m) => m.id === r.id))
+  // Use all requests for the main feed
+  const combinedItems = requests
 
   let displayAuctionItems = combinedItems.filter((item) => {
     if (activeCategory && item.categoryL1Id && !item.id.includes('hero-')) {
@@ -357,7 +358,7 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
               <div className="text-xs font-black uppercase text-white tracking-wide flex items-center gap-1.5">
                 <span>⚡ Активных заявок: {myRequests.length}</span>
                 <span className="px-2 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE] text-[10px] font-mono border border-[#00F2FE]/40">
-                  {myRequests.reduce((acc, r) => acc + (r.bidsCount || 3), 0)} откликов
+                  {myRequests.reduce((acc, r) => acc + (r.bidsCount || 0), 0)} откликов
                 </span>
               </div>
               <p className="text-[10px] text-gray-400 font-medium">Отклики исполнителей поступают в ваш Центр Управления</p>
@@ -403,11 +404,7 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
               <AuctionRequestCard key={item.id} item={item} onOpenBidModal={onOpenBidModal} />
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-6 bg-white/5 border border-white/10 rounded-[2rem] text-center">
-              <Search className="w-10 h-10 text-gray-500 mb-4 opacity-50" />
-              <h3 className="text-white font-bold text-lg mb-2">Нет активных запросов</h3>
-              <p className="text-gray-400 text-sm">В этой категории пока пусто. Будьте первыми, кто создаст запрос!</p>
-            </div>
+            <CreateRequestDashedCard onClick={() => onOpenQuickRequest?.({} as any)} />
           )}
         </div>
       </div>

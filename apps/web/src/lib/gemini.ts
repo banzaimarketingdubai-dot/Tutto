@@ -25,13 +25,29 @@ export interface SmartAIResponse {
 
 export function cleanUserText(rawText: string): string {
   let cleaned = rawText
-    .replace(/\b(?:привет|приветик|здравствуйте|добрый\s+день|добрый\s+вечер|слушай|слушайте|короче|в\s+общем|типа|пожалуйста|подскажи|поскажи|мне\s+бы|хотел\s+бы|хочу|нужно|нужен|нужна|требуется|ищу|закажу|сдайте|дайте|ребят|ребята|всем)\b/gi, '')
+    .replace(/\b(?:привет|приветик|здравствуйте|добрый\s+день|добрый\s+вечер|слушай|слушайте|короче|в\s+общем|типа|пожалуйста|подскажи|поскажи|мне\s+бы|хотел\s+бы|хочу|нужно|нужен|нужна|требуется|ребят|ребята|всем)\b/gi, '')
     .replace(/\s+/g, ' ')
     .replace(/^[,\.\!\?\:\-\s]+/, '')
     .trim()
 
   if (!cleaned) cleaned = rawText.trim()
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
+export function extractCoreSubject(rawText: string): string {
+  let subject = rawText
+    .replace(/\b(?:привет|приветик|здравствуйте|добрый\s+день|добрый\s+вечер|слушай|слушайте|короче|в\s+общем|типа|пожалуйста|подскажи|поскажи|мне\s+бы|хотел\s+бы|хочу|нужно|нужен|нужна|требуется|ищу|закажу|сниму|сниму\s+в\s+аренду|аренда|аренду|снять|куплю|купить|покупка|обменяю|обмен|вызову|ребят|ребята|всем)\b/gi, '')
+    .replace(/\b(?:на|в|по|в районе|в хабе|на острове|равай|патонг|чалонг|карон|камала|банг\s*тао|чангу|семиньяк|убуд|пхукет|бали|дубай|панган|самуи|бангкок)\b/gi, '')
+    .replace(/\b(?:\d+\s*(?:долларов|usd|\$|бат|thb|рублей|rub|дня|дней|суток|месяц|месяцев))\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,\.\!\?\:\-\s]+/, '')
+    .replace(/[,\.\!\?\:\-\s]+$/, '')
+    .trim()
+
+  if (!subject || subject.length < 3) {
+    subject = cleanUserText(rawText)
+  }
+  return subject.charAt(0).toUpperCase() + subject.slice(1)
 }
 
 export async function analyzeRequestFlowWithAI(
