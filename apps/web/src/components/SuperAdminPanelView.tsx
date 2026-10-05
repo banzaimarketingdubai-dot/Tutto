@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { getStoredRequests, saveRequestGlobally, deleteRequestGlobally } from '../lib/requestsSync'
+import { RequestItem } from '../types'
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   LayoutDashboard,
@@ -54,7 +56,7 @@ interface SuperAdminPanelViewProps {
   onClose: () => void
 }
 
-type AdminTab = 'dashboard' | 'transactions' | 'payouts' | 'disputes' | 'verification' | 'users' | 'reviews' | 'ai-log' | 'broadcasts' | 'analytics' | 'settings'
+type AdminTab = 'dashboard' | 'moderation' | 'transactions' | 'payouts' | 'disputes' | 'verification' | 'users' | 'reviews' | 'ai-log' | 'broadcasts' | 'analytics' | 'settings'
 
 type AdminRole = 'SuperAdmin' | 'Moderator' | 'Finance' | 'Support'
 
@@ -381,6 +383,7 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
   // Navigation Items
   const navItems: { id: AdminTab, label: string, icon: React.ReactNode, color: string }[] = [
     { id: 'dashboard', label: 'Дашборд', icon: <LayoutDashboard className="w-5 h-5" />, color: 'text-[#00F2FE]' },
+    { id: 'moderation', label: '🛡️ Модерация (Карантин)', icon: <ShieldAlert className="w-5 h-5" />, color: 'text-rose-400' },
     { id: 'users', label: 'Пользователи', icon: <Users className="w-5 h-5" />, color: 'text-purple-400' },
     { id: 'verification', label: 'Верификация (VIP)', icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-[#00F2FE]' },
     { id: 'transactions', label: 'Транзакции', icon: <CreditCard className="w-5 h-5" />, color: 'text-emerald-400' },
@@ -1258,6 +1261,92 @@ export const SuperAdminPanelView: React.FC<SuperAdminPanelViewProps> = ({ onClos
         {/* Dynamic View Area */}
         <div className="flex-1 overflow-y-auto p-6 lg:p-10 z-10 relative">
           {activeTab === 'dashboard' && renderDashboard()}
+          {activeTab === 'moderation' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <ShieldAlert className="w-6 h-6 text-rose-400" />
+                    Лист ожидания & Модерация заявок (Human-in-the-Loop)
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    Подозрительные заявки, удерживаемые в карантине. Каждое действие подтверждается администратором.
+                  </p>
+                </div>
+                <div className="px-3.5 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black font-mono">
+                  {getStoredRequests().filter(r => r.status === 'under_review').length} в карантине
+                </div>
+              </div>
+
+              {getStoredRequests().filter(r => r.status === 'under_review').length === 0 ? (
+                <div className="glass-card p-10 text-center space-y-3 border-emerald-500/30 bg-emerald-950/20">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-lg font-bold text-white">Лист ожидания пуст!</h4>
+                  <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                    Все опубликованные заявки прошли фильтрацию безопасности и одобрены администратором.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {getStoredRequests().filter(r => r.status === 'under_review').map((req) => (
+                    <div key={req.id} className="glass-card p-5 border-rose-500/40 bg-slate-900/90 space-y-4 relative overflow-hidden">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-black uppercase tracking-wider border border-rose-500/40 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" /> РИСК {Math.round((req.moderationScore || 0.8) * 100)}%
+                            </span>
+                            <span className="text-xs text-gray-400">📍 {req.hub.toUpperCase()} ({req.district})</span>
+                          </div>
+                          <h4 className="text-base font-extrabold text-white">{req.title}</h4>
+                          <p className="text-xs text-gray-300 mt-1 leading-relaxed">{req.description}</p>
+                          {req.moderationReason && (
+                            <div className="mt-2 text-[11px] text-rose-300 font-medium bg-rose-950/60 p-2 rounded-lg border border-rose-500/30">
+                              🔍 <b>Причина фильтрации:</b> {req.moderationReason}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-sm font-black text-[#CCFF00] font-mono">${req.budget || 0}</span>
+                          <div className="text-[10px] text-gray-400 mt-1">Автор: {req.clientName}</div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            triggerHapticFeedback('medium')
+                            deleteRequestGlobally(req.id)
+                            triggerNotificationFeedback('success')
+                            setActiveTab('moderation')
+                          }}
+                          className="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 font-bold text-xs border border-rose-500/40 transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Заблокировать и удалить</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            triggerHapticFeedback('heavy')
+                            const approvedReq: RequestItem = { ...req, status: 'open' }
+                            saveRequestGlobally(approvedReq)
+                            triggerNotificationFeedback('success')
+                            setActiveTab('moderation')
+                          }}
+                          className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                          <span>Одобрить и опубликовать</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'transactions' && renderTransactions()}
           {activeTab === 'payouts' && renderPayouts()}

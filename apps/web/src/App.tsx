@@ -1,4 +1,4 @@
-// Vercel Deployment Trigger (banzaimarketingdubai-dot): 2026-10-04T19:39:00
+// Vercel Deployment Trigger (banzaimarketingdubai-dot): 2026-10-05T16:51:00
 import React, { useState, useEffect } from 'react'
 import { Navbar } from './components/Navbar'
 import { MockupAuctionSection } from './components/MockupAuctionSection'
@@ -20,7 +20,8 @@ import { MyDealsAndListingsView } from './components/MyDealsAndListingsView'
 import { ExploreView } from './components/ExploreView'
 import { MOCK_REQUESTS, SERVICE_TEMPLATES } from './data/mockData'
 import { RequestItem, BidItem, ServiceTemplate, MarketItem, OfferInstance } from './types'
-import { initTelegramApp, triggerHapticFeedback, isTelegramEnvironment } from './lib/telegram'
+import { initTelegramApp, triggerHapticFeedback, isTelegramEnvironment, sendModerationAlertToAdmin } from './lib/telegram'
+import { moderateRequest } from './lib/moderation'
 import { CheckCircle2, Zap, Scale } from 'lucide-react'
 import { AdminDisputePanel } from './components/AdminDisputePanel'
 import { AuthModal } from './components/AuthModal'
@@ -35,6 +36,8 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { SuperAdminPanelView } from './components/SuperAdminPanelView'
 import { LiveOfferToast } from './components/LiveOfferToast'
 import { getNicheCoverImage } from './lib/nicheCovers'
+import { getStoredRequests, saveRequestGlobally, deleteRequestGlobally, subscribeToRequestsSync } from './lib/requestsSync'
+import { getUnifiedProfile } from './lib/accountSync'
 
 export function App() {
   const [currentLang, setCurrentLang] = useState<Language>(() => detectDefaultLanguage())
@@ -45,17 +48,15 @@ export function App() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false)
 
   const [requests, setRequests] = useState<RequestItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('tutto_user_requests')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) return parsed
-      }
-    } catch (e) {
-      console.error('Failed to load user requests:', e)
-    }
-    return []
+    return getStoredRequests()
   })
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRequestsSync(activeHub, (updated) => {
+      setRequests(updated)
+    })
+    return () => unsubscribe()
+  }, [activeHub])
 
   const [bidsByRequestId, setBidsByRequestId] = useState<Record<string, BidItem[]>>(() => {
     try {
@@ -66,10 +67,6 @@ export function App() {
     }
     return {}
   })
-
-  useEffect(() => {
-    localStorage.setItem('tutto_user_requests', JSON.stringify(requests))
-  }, [requests])
 
   useEffect(() => {
     localStorage.setItem('tutto_bids_by_req', JSON.stringify(bidsByRequestId))
@@ -242,7 +239,7 @@ export function App() {
     providerName?: string
   } | null>(null)
 
-  const handleCreateRequest = (newReq: any) => {
+  const handleCreateRequest = async (newReq: any) => {
     let catId = newReq.categoryL1Id
     const catName = newReq.categoryName || newReq.categoryL1Name || 'УСЛУГИ'
     if (!catId) {
@@ -266,43 +263,78 @@ export function App() {
     const createdTime = new Date().toISOString()
     const endsTime = newReq.auctionEndsAt || new Date(Date.now() + validDurationMins * 60 * 1000).toISOString()
 
+    const userProf = getUnifiedProfile(session)
+    const activeUserId = userProf.email || (userProf.telegramId ? String(userProf.telegramId) : 'usr-current')
+    const reqTitle = newReq.title || 'Запрос на услугу'
+    const reqDesc = newReq.description || ''
+
+    // Run Automated Safety & Moderation Analysis
+    const modResult = await moderateRequest(reqTitle, reqDesc)
+    const isQuarantined = modResult.requiresReview || !modResult.isAllowed || modResult.riskScore >= 0.20
+
     const createdItem: RequestItem = {
       id: `req-${Date.now()}`,
-      clientId: 'usr-current',
-      clientName: 'Александр',
-      clientAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      clientId: activeUserId,
+      clientName: userProf.profileName || 'Пользователь',
+      clientAvatar: userProf.profileAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       clientRating: 5.0,
       hub: (newReq.hub as any) || activeHub,
       district: newReq.district || 'Равай',
       categoryL1Id: catId,
       categoryL1Name: catName,
-      title: newReq.title || 'Запрос на услугу',
-      description: newReq.description || '',
+      title: reqTitle,
+      description: reqDesc,
       budget: typeof newReq.budget === 'number' ? newReq.budget : 0,
       currency: 'USD',
       mediaUrls: newReq.mediaUrls && newReq.mediaUrls.length > 0
         ? newReq.mediaUrls
-        : [getNicheCoverImage(catName, newReq.title || '')],
+        : [getNicheCoverImage(catName, reqTitle)],
       isFeatured: true,
-      status: 'open',
+      status: isQuarantined ? 'under_review' : 'open',
       createdAt: createdTime,
       expiresAt: endsTime,
       auctionEndsAt: endsTime,
       bidsCount: 0,
+      moderationScore: modResult.riskScore,
+      moderationReason: modResult.reason,
+      flaggedKeywords: modResult.flaggedKeywords,
     }
 
-    setRequests((prev) => [createdItem, ...prev])
+    if (isQuarantined) {
+      // Send Telegram alert to Administrator (Human-in-the-Loop)
+      sendModerationAlertToAdmin({
+        requestId: createdItem.id,
+        title: createdItem.title,
+        description: createdItem.description,
+        authorName: createdItem.clientName,
+        hub: createdItem.hub,
+        district: createdItem.district,
+        riskScore: modResult.riskScore,
+        reason: modResult.reason,
+        flaggedKeywords: modResult.flaggedKeywords,
+      }).catch((e) => console.warn('Moderation alert dispatch exception:', e))
+    }
+
+    const updatedReqs = saveRequestGlobally(createdItem)
+    setRequests(updatedReqs)
     setActiveCategory(null)
     setActiveTab('my-bids')
-    setNotificationMsg('⚡ Заявка создана! Переходим в Центр Управления Откликами...')
-    setTimeout(() => setNotificationMsg(null), 4000)
+
+    if (isQuarantined) {
+      setNotificationMsg('⏳ Заявка находится на ручной модерации у администратора в листе ожидания.')
+    } else {
+      setNotificationMsg('⚡ Заявка создана! Переходим в Центр Управления Откликами...')
+    }
+    setTimeout(() => setNotificationMsg(null), 5000)
 
     setNotifications((prev) => [
       {
         id: `notif-${Date.now()}-req`,
         type: 'bid',
-        title: `⚡ Заявка создана: «${createdItem.title}»`,
-        message: `Заявка с бюджетом ${createdItem.budget ? `$${createdItem.budget}` : 'По договоренности'} опубликована в аукционе (${createdItem.district}).`,
+        title: isQuarantined ? `⏳ Заявка на модерации: «${createdItem.title}»` : `⚡ Заявка создана: «${createdItem.title}»`,
+        message: isQuarantined
+          ? `Заявка помещена в лист ожидания. Администратор проверяет контент.`
+          : `Заявка с бюджетом ${createdItem.budget ? `$${createdItem.budget}` : 'По договоренности'} опубликована в аукционе (${createdItem.district}).`,
         timestamp: 'Только что',
         isRead: false,
         actionTab: 'my-bids',
@@ -659,7 +691,8 @@ export function App() {
                 setTimeout(() => setNotificationMsg(null), 3000)
               }}
               onDeleteRequest={(reqId) => {
-                setRequests((prev) => prev.filter((r) => r.id !== reqId))
+                const updatedReqs = deleteRequestGlobally(reqId)
+                setRequests(updatedReqs)
                 setNotificationMsg('🗑️ Заявка удалена из аукциона')
                 setTimeout(() => setNotificationMsg(null), 3000)
               }}

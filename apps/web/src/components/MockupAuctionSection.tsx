@@ -6,6 +6,7 @@ import { triggerHapticFeedback } from '../lib/telegram'
 import { FeedHeader } from './FeedHeader'
 import { ClientOffersStream } from './ClientOffersStream'
 import { CreateRequestDashedCard } from './MyDealsAndListingsView'
+import { getUnifiedProfile } from '../lib/accountSync'
 
 interface MockupAuctionSectionProps {
   mode?: 'rent' | 'services'
@@ -222,8 +223,17 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
   const [sortBy, setSortBy] = useState<'urgent' | 'budget' | 'newest'>('urgent')
   const timerRef = useRef<any>(null)
 
+  const currentProfile = getUnifiedProfile()
+  const currentUserId = currentProfile.email || (currentProfile.telegramId ? String(currentProfile.telegramId) : 'usr-current')
+  const currentProfileName = currentProfile.profileName.toLowerCase()
+
   // Filter user's own active requests (Pinned at top!)
-  const myRequests = requests.filter((r) => r.clientId === 'usr-current' || (r.clientName && r.clientName.includes('Александр')))
+  const myRequests = requests.filter((r) => {
+    if (!r) return false
+    if (r.clientId === currentUserId || r.clientId === 'usr-current') return true
+    if (r.clientName && currentProfileName && r.clientName.toLowerCase().includes(currentProfileName)) return true
+    return false
+  })
   
   // JTBD Focus Mode: If user has active open requests, collapse search, chips and voice input by default to remove clutter!
   const [showSearchHeader, setShowSearchHeader] = useState<boolean>(() => myRequests.length === 0)
@@ -310,10 +320,11 @@ export const MockupAuctionSection: React.FC<MockupAuctionSectionProps> = ({
     ? SERVICE_TEMPLATES.filter((tmpl) => tmpl.categoryL1Id === activeCategory)
     : SERVICE_TEMPLATES
 
-  // Use all requests for the main feed
+  // Use all approved open requests for the main feed
   const combinedItems = requests
 
   let displayAuctionItems = combinedItems.filter((item) => {
+    if (item.status && item.status !== 'open') return false
     if (activeCategory && item.categoryL1Id && !item.id.includes('hero-')) {
       const cat = item.categoryL1Id
       const matches =
@@ -522,12 +533,18 @@ function MyPinnedRequestCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CCFF00] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#CCFF00]"></span>
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${item.status === 'under_review' ? 'bg-rose-400' : 'bg-[#CCFF00]'}`}></span>
+            <span className={`relative inline-flex rounded-full h-3 w-3 ${item.status === 'under_review' ? 'bg-rose-500' : 'bg-[#CCFF00]'}`}></span>
           </span>
-          <span className="text-xs font-black text-[#CCFF00] uppercase tracking-wider">
-            МОЯ ЗАЯВКА В ЛЕНТЕ
-          </span>
+          {item.status === 'under_review' ? (
+            <span className="text-xs font-black text-rose-400 uppercase tracking-wider">
+              ⏳ НА РУЧНОЙ МОДЕРАЦИИ У АДМИНИСТРАТОРА
+            </span>
+          ) : (
+            <span className="text-xs font-black text-[#CCFF00] uppercase tracking-wider">
+              МОЯ ЗАЯВКА В ЛЕНТЕ
+            </span>
+          )}
         </div>
         <span className="text-[11px] font-bold text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
           📍 {item.district}

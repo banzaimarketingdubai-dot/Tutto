@@ -126,6 +126,56 @@ export async function sendSuperadminErrorAlert(errorMsg: string, stack?: string,
   }
 }
 
+export async function sendModerationAlertToAdmin(params: {
+  requestId: string
+  title: string
+  description: string
+  authorName: string
+  hub: string
+  district: string
+  riskScore: number
+  reason: string
+  flaggedKeywords?: string[]
+}): Promise<boolean> {
+  try {
+    const riskPercent = Math.round((params.riskScore || 0) * 100)
+    const riskEmoji = riskPercent >= 80 ? '🔴' : '🟡'
+
+    const text =
+      `🛡️ <b>ТРЕБУЕТСЯ ПРОВЕРКА ЗАЯВКИ (МОДЕРАЦИЯ)</b>\n\n` +
+      `👤 <b>Автор:</b> ${params.authorName}\n` +
+      `📍 <b>Локация:</b> ${params.hub.toUpperCase()} (${params.district})\n` +
+      `${riskEmoji} <b>Уровень риска:</b> <code>${riskPercent}%</code> (${params.reason})\n` +
+      (params.flaggedKeywords?.length ? `🏷️ <b>Триггеры:</b> ${params.flaggedKeywords.join(', ')}\n` : '') +
+      `📌 <b>Заголовок:</b> <i>${params.title}</i>\n` +
+      `📝 <b>Текст:</b> <pre>${params.description.slice(0, 300)}</pre>\n\n` +
+      `⚙️ <i>Заявка помещена в Лист Ожидания (Карантин). Необходима ручная проверка живым человеком.</i>\n` +
+      `⏰ <i>${new Date().toLocaleString('ru-RU')}</i>`
+
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: SUPERADMIN_CHAT_ID,
+        text,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '🛡️ Открыть Панель Админа', url: 'https://needtnow.vercel.app/?superadmin=true' },
+            ]
+          ]
+        }
+      }),
+    })
+    const data = await response.json()
+    return data.ok
+  } catch (err) {
+    console.error('Failed to send moderation alert to Telegram Admin:', err)
+    return false
+  }
+}
+
 export async function sendAPIKeyStatusReport(): Promise<{ ok: boolean; statusMsg: string }> {
   try {
     const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || ''

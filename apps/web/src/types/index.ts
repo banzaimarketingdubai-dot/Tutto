@@ -45,13 +45,16 @@ export interface RequestItem {
   currency: string
   mediaUrls: string[]
   isFeatured: boolean
-  status: 'open' | 'in_progress' | 'completed' | 'cancelled' | 'expired'
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled' | 'expired' | 'under_review'
   createdAt: string
   expiresAt: string
   auctionEndsAt: string
   bidsCount: number
   clarificationRequests?: { providerId: string; question: string; createdAt: string }[]
   clarificationComment?: string
+  moderationScore?: number
+  moderationReason?: string
+  flaggedKeywords?: string[]
 }
 
 export interface BidItem {

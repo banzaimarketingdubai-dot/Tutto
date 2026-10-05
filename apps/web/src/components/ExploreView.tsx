@@ -54,6 +54,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   const filteredRequests = useMemo(() => {
     if (contentType === 'market') return []
     return requests.filter((req) => {
+      if (req.status && req.status !== 'open') return false
       const budget = req.budget ?? 0
 
       // Hub filter
